@@ -23,7 +23,7 @@ services:
   api:
     build: ./backend
     env_file:
-      - .env
+      - .env.example
     environment:
       DATABASE_URL: postgresql+asyncpg://veritas:veritas@postgres:5432/veritas
       REDIS_URL: redis://redis:6379/0
