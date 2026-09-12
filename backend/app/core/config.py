@@ -13,5 +13,17 @@ class Settings(BaseSettings):
     EDGAR_USER_AGENT: str = "Veritas Research contact@example.com"
     CORS_ORIGINS: list[str] = ["http://localhost:3000"]
 
+    ANTHROPIC_API_KEY: str = ""
+    ANTHROPIC_MODEL: str = "claude-sonnet-5"
+
+    MEMO_RETRIEVAL_TOP_K: int = 8
+    MEMO_CACHE_TTL_SECONDS: int = 60 * 60 * 24  # 1 day
+
+    @property
+    def SYNC_DATABASE_URL(self) -> str:
+        """Celery workers use a sync driver (psycopg3) rather than
+        asyncpg, since Celery tasks run outside an event loop."""
+        return self.DATABASE_URL.replace("+asyncpg", "+psycopg")
+
 
 settings = Settings()

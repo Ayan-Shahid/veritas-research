@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import companies, filings, health
+from app.api.routes import chunks, companies, eval_runs, filings, health, memos, organizations, watchlist
 from app.core.config import settings
 
 app = FastAPI(title=settings.PROJECT_NAME)
@@ -17,6 +17,11 @@ app.add_middleware(
 app.include_router(health.router, tags=["health"])
 app.include_router(companies.router, tags=["companies"])
 app.include_router(filings.router, tags=["filings"])
+app.include_router(organizations.router, tags=["organizations"])
+app.include_router(watchlist.router, tags=["watchlist"])
+app.include_router(memos.router, tags=["memos"])
+app.include_router(chunks.router, tags=["chunks"])
+app.include_router(eval_runs.router, tags=["eval"])
 
 
 @app.get("/")

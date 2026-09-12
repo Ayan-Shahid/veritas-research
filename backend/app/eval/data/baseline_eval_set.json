@@ -1,0 +1,48 @@
+[
+  {
+    "name": "meridian_robotics_10k_excerpt",
+    "company_name": "Meridian Robotics Inc.",
+    "ticker": "MRDN",
+    "chunks": [
+      {
+        "id": "mrdn-c1",
+        "content": "Total revenue for fiscal 2025 was $842 million, an increase of 18% from $713 million in fiscal 2024, driven primarily by growth in our industrial automation segment."
+      },
+      {
+        "id": "mrdn-c2",
+        "content": "Gross margin improved to 47.3% in fiscal 2025 compared to 44.1% in the prior year, reflecting lower input costs and manufacturing efficiencies at our Ohio facility."
+      },
+      {
+        "id": "mrdn-c3",
+        "content": "We face significant competition from both established industrial robotics manufacturers and new entrants backed by substantial venture capital funding, which could pressure our pricing and market share."
+      },
+      {
+        "id": "mrdn-c4",
+        "content": "Approximately 62% of our revenue is concentrated among our ten largest customers, and the loss of any single major customer could have a material adverse effect on our results of operations."
+      }
+    ]
+  },
+  {
+    "name": "cascade_foods_10q_excerpt",
+    "company_name": "Cascade Foods Group",
+    "ticker": "CASC",
+    "chunks": [
+      {
+        "id": "casc-c1",
+        "content": "Net sales for the quarter ended June 30, 2025 were $312 million, down 3% year over year, primarily due to softer demand in our snack foods division amid category-wide volume declines."
+      },
+      {
+        "id": "casc-c2",
+        "content": "Operating margin declined to 9.8% from 11.2% in the prior-year quarter as elevated commodity costs, particularly for cocoa and vegetable oils, outpaced pricing actions."
+      },
+      {
+        "id": "casc-c3",
+        "content": "The company is subject to evolving regulatory scrutiny regarding food labeling and health claims in several of its key markets, which could increase compliance costs or restrict marketing of certain products."
+      },
+      {
+        "id": "casc-c4",
+        "content": "Management has initiated a cost-reduction program targeting $40 million in annualized savings by the end of fiscal 2026, primarily through supply chain consolidation."
+      }
+    ]
+  }
+]
