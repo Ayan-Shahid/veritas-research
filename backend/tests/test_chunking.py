@@ -1,4 +1,3 @@
-import pytest
 from app.services.chunking import (
     chunk_markdown_table,
     enforce_sec_markdown_headers,

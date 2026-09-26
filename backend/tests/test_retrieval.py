@@ -1,4 +1,3 @@
-import pytest
 from app.services.retrieval import deduplicate_parent_chunks
 
 

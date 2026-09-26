@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import re
 from typing import Any
-from bs4 import BeautifulSoup
 import sec2md
 from sec2md import Item10K, Item10Q
 from langchain_text_splitters import MarkdownHeaderTextSplitter, RecursiveCharacterTextSplitter
