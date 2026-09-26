@@ -44,8 +44,7 @@ class MemoUpdate(BaseModel):
 
 
 class MemoRead(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
     id: uuid.UUID
     company_id: uuid.UUID
     model_name: str

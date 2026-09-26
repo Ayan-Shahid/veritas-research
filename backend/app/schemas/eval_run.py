@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict
 
 
 class EvalRunRead(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
 
     id: uuid.UUID
     eval_set_name: str

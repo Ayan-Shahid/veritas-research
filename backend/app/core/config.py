@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str = ""
     ANTHROPIC_MODEL: str = "claude-sonnet-5"
 
-    MEMO_RETRIEVAL_TOP_K: int = 8
+    MEMO_RETRIEVAL_TOP_K: int = 20
     MEMO_CACHE_TTL_SECONDS: int = 60 * 60 * 24  # 1 day
 
     @property

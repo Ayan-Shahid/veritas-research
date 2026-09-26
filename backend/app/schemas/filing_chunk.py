@@ -11,6 +11,7 @@ class FilingChunkRead(BaseModel):
     filing_id: uuid.UUID
     chunk_index: int
     content: str
+    chunk_metadata: dict | None = None
     created_at: datetime
 
 

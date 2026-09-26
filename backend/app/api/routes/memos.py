@@ -3,10 +3,12 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette import status
 
 from app.api.deps import get_db
 from app.models.audit_log import AuditLog
 from app.models.company import Company
+from app.models.filing_chunk import FilingChunk
 from app.models.job import Job
 from app.models.memo import Memo
 from app.models.memo_version import MemoVersion
@@ -149,3 +151,53 @@ async def get_memo_audit_log(memo_id: uuid.UUID, db: AsyncSession = Depends(get_
         .order_by(AuditLog.created_at.desc())
     )
     return result.scalars().all()
+
+
+@router.get("/{memo_id}/citations/{citation_id}")
+async def get_memo_citation(memo_id: uuid.UUID, citation_id: str, db: AsyncSession = Depends(get_db)):
+    """Resolves a parent block citation hash into the actual SEC filing text."""
+    memo = await db.get(Memo, memo_id)
+    if not memo or not memo.citation_map:
+        raise HTTPException(status_code=404, detail="Memo or citations not found")
+
+    # 1. Look up the list of child chunk IDs tied to this parent hash
+    child_ids = memo.citation_map.get(citation_id)
+    if not child_ids:
+        raise HTTPException(status_code=404, detail="Invalid citation ID")
+
+    # 2. Fetch just the first child chunk (since all children in this list share the exact same parent_content)
+    first_child_id = uuid.UUID(child_ids[0])
+    chunk = await db.get(FilingChunk, first_child_id)
+
+    if not chunk or not chunk.chunk_metadata:
+        raise HTTPException(status_code=404, detail="Source chunk missing")
+
+    # 3. Return the full parent context to highlight in the UI
+    return {
+        "citation_id": citation_id,
+        "source_url": chunk.chunk_metadata.get("source_url"),
+        "sec_item_label": chunk.chunk_metadata.get("sec_item_label"),
+        "content": chunk.chunk_metadata.get("parent_content", chunk.content)
+    }
+
+
+@router.delete("/memos/{memo_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_memo(memo_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    """Deletes a memo and logs the action to the audit trail."""
+    memo = await db.get(Memo, memo_id)
+    if not memo:
+        raise HTTPException(status_code=404, detail="Memo not found")
+
+    # Record the deletion in the audit log before removing the record
+    db.add(
+        AuditLog(
+            action="memo_deleted",
+            target_type="memo",
+            target_id=memo.id,
+            company_id=memo.company_id,
+        )
+    )
+
+    await db.delete(memo)
+    await db.commit()
+    return None

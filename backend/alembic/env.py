@@ -14,6 +14,7 @@ from app.models import (  # noqa: F401 - register models
     eval_run,
     filing,
     filing_chunk,
+    fine_tune_run,
     job,
     memo,
     memo_version,

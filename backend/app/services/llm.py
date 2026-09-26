@@ -1,54 +1,37 @@
-"""Calls the Claude API to generate a memo draft from retrieved chunks.
-
-Kept as a single narrow function so the rest of the app doesn't care
-which model is behind it — swapping in the fine-tuned model server in
-Week 6-7 means changing this file, not every call site. Failures here
-(bad JSON, API error) propagate up to the Celery task, which records
-them on the Job row rather than swallowing them.
-"""
-from __future__ import annotations
-
-import json
-
-import anthropic
+import logging
+from langchain_anthropic import ChatAnthropic
+from langchain_core.prompts import ChatPromptTemplate
 
 from app.core.config import settings
 from app.schemas.memo import MemoGeneration
-from app.services.memo_prompt import SYSTEM_PROMPT, build_memo_prompt
+from app.services.memo_prompt import SYSTEM_PROMPT, build_human_prompt
 
-_client: anthropic.Anthropic | None = None
+logger = logging.getLogger(__name__)
 
-
-def get_client() -> anthropic.Anthropic:
-    """Shared Anthropic client, reused by the eval harness (app/eval/scorers.py)
-    for its LLM-judge calls so both generation and judging go through the
-    same client setup."""
-    global _client
-    if _client is None:
-        _client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-    return _client
-
-
-def generate_memo_draft(
-    company_name: str, ticker: str, chunks: list[tuple[str, str]]
-) -> MemoGeneration:
-    """chunks is a list of (chunk_id, content) tuples, in retrieval order."""
-    prompt = build_memo_prompt(company_name, ticker, chunks)
-
-    response = get_client().messages.create(
+def get_llm() -> ChatAnthropic:
+    return ChatAnthropic(
         model=settings.ANTHROPIC_MODEL,
-        max_tokens=2000,
-        system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": prompt}],
+        anthropic_api_key=settings.ANTHROPIC_API_KEY,
+        max_tokens=6000,
     )
 
-    raw_text = "".join(block.text for block in response.content if block.type == "text")
+def generate_memo_draft(
+    company_name: str, ticker: str, context_chunks: list[tuple[str, str]]
+) -> MemoGeneration:
+    llm = get_llm()
+    structured_llm = llm.with_structured_output(MemoGeneration)
 
-    try:
-        parsed = json.loads(raw_text)
-    except json.JSONDecodeError as exc:
-        raise ValueError(
-            f"Model did not return valid JSON: {exc}\n\nRaw output:\n{raw_text[:500]}"
-        ) from exc
+    # 1. Delegate to the unified prompt builder
+    human_content = build_human_prompt(company_name, ticker, context_chunks)
 
-    return MemoGeneration.model_validate(parsed)
+    # 2. Map cleanly into LangChain's structure
+    prompt_template = ChatPromptTemplate.from_messages([
+        ("system", SYSTEM_PROMPT),
+        ("human", "{human_content}"),
+    ])
+
+    chain = prompt_template | structured_llm
+
+    logger.info("Invoking LangChain Anthropic chain for %s (%s)", company_name, ticker)
+    
+    return chain.invoke({"human_content": human_content})

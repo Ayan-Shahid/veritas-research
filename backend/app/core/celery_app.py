@@ -13,12 +13,16 @@ celery_app.conf.update(
     accept_content=["json"],
     result_serializer="json",
     task_track_started=True,
-    # Memo generation calls an LLM API — give it real headroom rather
-    # than the Celery default of no limit (which can hide a hung task).
     task_time_limit=300,
     task_soft_time_limit=240,
 )
 
-# Ensures @celery_app.task-decorated functions in this module are
-# registered when the worker boots (celery -A app.core.celery_app worker).
-celery_app.autodiscover_tasks(["app.tasks"])
+# autodiscover_tasks(["app.tasks"]) looks for a submodule literally named
+# `tasks` inside each listed package (i.e. it tries to import
+# app.tasks.tasks) — it does NOT import every module inside the app.tasks
+# package. Our task lives in app/tasks/memo_tasks.py, so autodiscovery
+# silently found nothing and the worker rejected every job with "Received
+# unregistered task". Import the module directly instead, so the
+# @celery_app.task decorator actually runs and registers the task when
+# the worker process boots.
+from app.tasks import memo_tasks  # noqa: E402,F401
