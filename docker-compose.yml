@@ -1,32 +1,111 @@
+# Development stack (production lives in deploy/docker-compose.yml).
+# Every secret below is a throwaway dev value; never reuse one in production.
+#
+# Auth is self-hosted Supabase Auth (GoTrue), as in production. Emails go to Mailpit:
+# open http://localhost:8025 to read the verification and reset codes.
+
+x-dev-auth: &dev-auth
+  # Dev-only HS256 secret; DEV_ANON_KEY below and in frontend/.env.example are signed with it.
+  JWT_SECRET: &dev-jwt-secret veritas-dev-only-jwt-secret-not-for-production-0123456789
+
 services:
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     environment:
-      POSTGRES_USER: veritas
-      POSTGRES_PASSWORD: veritas
+      # Superuser must be "postgres" (a GoTrue migration grants to it). The app connects as
+      # "veritas", created by deploy/initdb/01-bootstrap.sh on first start.
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
       POSTGRES_DB: veritas
+      APP_DB_PASSWORD: veritas
+      AUTH_DB_PASSWORD: auth-dev-password
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      # New volume name on purpose: the bootstrap only runs on an empty volume.
+      - pg_data:/var/lib/postgresql/data
+      - ./deploy/initdb:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U veritas"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d veritas"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   redis:
     image: redis:7-alpine
     ports:
       - "6379:6379"
 
+  auth:
+    image: supabase/gotrue:v2.196.0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      templates:
+        condition: service_started
+    ports:
+      - "9999:9999"
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: "9999"
+      # The browser reaches GoTrue through the Next dev server's /auth/v1 rewrite.
+      API_EXTERNAL_URL: http://localhost:3000/auth/v1
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:auth-dev-password@postgres:5432/veritas
+      GOTRUE_SITE_URL: http://localhost:3000
+      GOTRUE_URI_ALLOW_LIST: http://localhost:3000
+      GOTRUE_DISABLE_SIGNUP: "false"
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+      GOTRUE_EXTERNAL_PHONE_ENABLED: "false"
+      GOTRUE_EXTERNAL_ANONYMOUS_USERS_ENABLED: "true"
+      GOTRUE_JWT_SECRET: *dev-jwt-secret
+      GOTRUE_JWT_EXP: "3600"
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_JWT_ISSUER: http://localhost:3000/auth/v1
+      GOTRUE_SECURITY_REFRESH_TOKEN_ROTATION_ENABLED: "true"
+      GOTRUE_SECURITY_UPDATE_PASSWORD_REQUIRE_CURRENT_PASSWORD: "true"
+      # No GOTRUE_RATE_LIMIT_HEADER in dev: there is no Cloudflare to set it.
+      GOTRUE_MAILER_AUTOCONFIRM: "false"
+      GOTRUE_MAILER_OTP_EXP: "600"
+      GOTRUE_MAILER_OTP_LENGTH: "6"
+      GOTRUE_SMTP_HOST: mailpit
+      GOTRUE_SMTP_PORT: "1025"
+      GOTRUE_SMTP_ADMIN_EMAIL: noreply@veritas.local
+      GOTRUE_SMTP_SENDER_NAME: Veritas (dev)
+      GOTRUE_SMTP_MAX_FREQUENCY: 60s
+      GOTRUE_MAILER_TEMPLATES_RECOVERY: http://templates:8081/recovery.html
+      GOTRUE_MAILER_TEMPLATES_EMAIL_CHANGE: http://templates:8081/email-change.html
+      GOTRUE_MAILER_TEMPLATES_CONFIRMATION: http://templates:8081/confirmation.html
+      GOTRUE_MAILER_SUBJECTS_RECOVERY: Your Veritas password reset code
+      GOTRUE_MAILER_SUBJECTS_EMAIL_CHANGE: Your Veritas verification code
+      GOTRUE_MAILER_SUBJECTS_CONFIRMATION: Confirm your Veritas email
+
+  # Serves deploy/email-templates to GoTrue (Caddy does this in production).
+  templates:
+    image: caddy:2
+    command: caddy file-server --root /srv --listen :8081
+    volumes:
+      - ./deploy/email-templates:/srv:ro
+
+  # Catches every email GoTrue sends. Web UI: http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:v1.31.4
+    ports:
+      - "8025:8025"
+
   api:
     build: ./backend
     env_file:
-      - .env.example
-    environment:
+      - .env.local
+    environment: &dev-api-env
       DATABASE_URL: postgresql+asyncpg://veritas:veritas@postgres:5432/veritas
       REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      SUPABASE_JWT_SECRET: *dev-jwt-secret
+      SUPABASE_URL: ""
     ports:
       - "8000:8000"
     volumes:
@@ -36,7 +115,25 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      auth:
+        condition: service_started
+      worker:
+        condition: service_started
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+
+  worker:
+    build: ./backend
+    env_file:
+      - .env.local
+    environment: *dev-api-env
+    volumes:
+      - ./backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    command: celery -A app.core.celery_app worker --loglevel=info
 
   frontend:
     build: ./frontend
@@ -48,7 +145,14 @@ services:
       - /app/.next
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      NEXT_PUBLIC_SUPABASE_URL: http://localhost:3000
+      # anon key signed with the dev JWT secret above (role "anon", no sub/aud)
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzkxNTY3MzY5LCJleHAiOjIxMDY5MjczNjl9.WqSb0M8P2Z0Cx0rnPkmCmh_ZOEfNdnZMmrBvBa2RGEY
+      AUTH_DEV_UPSTREAM: http://auth:9999
+    depends_on:
+      - auth
     command: npm run dev
 
 volumes:
-  postgres_data:
+  pg_data:

@@ -1,49 +1,22 @@
-"""Top-k retrieval using pgvector in SQLAlchemy."""
+"""Top-k chunk retrieval over pgvector, plus parent-block deduplication
+and citation-id assignment for prompt construction.
+
+Retrieval is split into two separate queries (financials / risks) rather
+than one composite query - dense numeric tables and qualitative risk
+narrative embed very differently, and one generic query was found to
+systematically under-rank real financial data against boilerplate
+narrative text. See app/tasks/memo_tasks.py for how the two halves of
+MEMO_RETRIEVAL_TOP_K get combined.
+"""
 from __future__ import annotations
 
 import hashlib
 import uuid
+
 from sqlalchemy import Select, select
 
 from app.models.filing import Filing
 from app.models.filing_chunk import FilingChunk
-
-
-def deduplicate_parent_chunks(chunks: list[FilingChunk]) -> tuple[list[tuple[str, str]], dict[str, list[str]]]:
-    """
-    Consolidates child chunks that share the same parent context.
-    Generates a deterministic hash for each unique parent block to be used as the citation ID.
-
-    Returns:
-        chunk_pairs: list of (citation_id, parent_text) for the LLM prompt.
-        hash_to_children: dict mapping citation_id -> list of child_ids for DB lookups.
-    """
-    parent_to_children: dict[str, list[str]] = {}
-
-    for chunk in chunks:
-        parent_text = (
-            chunk.chunk_metadata.get("parent_content", chunk.content)
-            if chunk.chunk_metadata else chunk.content
-        )
-
-        if parent_text not in parent_to_children:
-            parent_to_children[parent_text] = []
-        parent_to_children[parent_text].append(str(chunk.id))
-
-    chunk_pairs = []
-    hash_to_children = {}
-
-    for parent_text, child_ids in parent_to_children.items():
-        # Generate a stable 8-character hex hash from the text
-        parent_hash = hashlib.md5(parent_text.encode("utf-8")).hexdigest()[:8]
-
-        # Prefix it to make it clearly recognizable as a parent block citation
-        citation_id = f"sec-{parent_hash}"
-
-        chunk_pairs.append((citation_id, parent_text))
-        hash_to_children[citation_id] = child_ids
-
-    return chunk_pairs, hash_to_children
 
 
 def build_top_chunks_query(
@@ -52,7 +25,10 @@ def build_top_chunks_query(
     k: int,
     sec_item_filter: str | None = None,
 ) -> Select:
-    """Build a pgvector similarity search query over FilingChunk embeddings."""
+    """Returns a Select (not executed) for the top-k chunks by cosine
+    distance for a company, optionally restricted to chunks tagged with a
+    specific sec_item_label (e.g. narrowing a risk query to Item 1A
+    specifically, rather than searching the whole filing)."""
     stmt = (
         select(FilingChunk)
         .join(Filing, Filing.id == FilingChunk.filing_id)
@@ -60,10 +36,49 @@ def build_top_chunks_query(
     )
 
     if sec_item_filter:
-        # Pre-filter by metadata if chunk_metadata is stored as JSONB
-        stmt = stmt.where(
-            FilingChunk.chunk_metadata["sec_item_label"].astext == sec_item_filter
+        stmt = stmt.where(FilingChunk.chunk_metadata["sec_item_label"].astext == sec_item_filter)
+
+    return stmt.order_by(FilingChunk.embedding.cosine_distance(query_embedding)).limit(k)
+
+
+def deduplicate_parent_chunks(
+    chunks: list[FilingChunk],
+) -> tuple[list[tuple[str, str]], dict[str, list[str]]]:
+    """Groups retrieved child chunks by their shared parent context (via
+    chunk_metadata["parent_content"], falling back to the chunk's own
+    content if no parent metadata is present), so multiple children under
+    the same parent contribute one merged context block to the prompt
+    instead of duplicating that parent's text once per child.
+
+    Returns:
+      - chunk_pairs: a list of (citation_id, parent_text) tuples in
+        first-seen order, ready to pass to build_human_prompt.
+      - citation_map: citation_id -> the real FilingChunk ids that were
+        merged under it, for resolving a citation back to actual source
+        chunks (e.g. for the citation-chip UI or training-data export) -
+        the citation_id itself is a content hash, not a FilingChunk
+        primary key, precisely because more than one real chunk can
+        collapse into a single citation.
+    """
+    parent_to_children: dict[str, list[str]] = {}
+    parent_text_by_hash: dict[str, str] = {}
+    order: list[str] = []
+
+    for chunk in chunks:
+        parent_text = (
+            chunk.chunk_metadata.get("parent_content", chunk.content)
+            if chunk.chunk_metadata
+            else chunk.content
         )
 
-    stmt = stmt.order_by(FilingChunk.embedding.cosine_distance(query_embedding)).limit(k)
-    return stmt
+        citation_id = "sec-" + hashlib.md5(parent_text.encode()).hexdigest()[:8]
+
+        if citation_id not in parent_to_children:
+            parent_to_children[citation_id] = []
+            parent_text_by_hash[citation_id] = parent_text
+            order.append(citation_id)
+
+        parent_to_children[citation_id].append(str(chunk.id))
+
+    chunk_pairs = [(cid, parent_text_by_hash[cid]) for cid in order]
+    return chunk_pairs, parent_to_children

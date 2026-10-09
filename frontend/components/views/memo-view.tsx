@@ -4,7 +4,6 @@ import { useState } from "react";
 import { Edit2, History, ClipboardList, CheckCircle, XCircle, Trash2, Fingerprint, ExternalLink, FileCheck, Loader2, Save, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { Memo, Company, MemoClaim, MemoGeneration } from "@/types";
 import { AuditLog, MemoVersion, useCitation } from "@/hooks/use-memos";
 
@@ -31,6 +30,8 @@ export function MemoView({ memo, company, versions, auditLog, onUpdate, onApprov
     const [isEditing, setIsEditing] = useState(false);
     const [editContent, setEditContent] = useState<MemoGeneration>(memo.content);
     const [prevMemoContent, setPrevMemoContent] = useState<MemoGeneration>(memo.content);
+
+    const glass = "rounded-xl text-card-foreground backdrop-saturate-150 border border-foreground/5 backdrop-blur-xl bg-gradient-to-br from-card/20 to-card/5 dark:from-card/20 dark:to-background/5 shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_1px_rgba(255,255,255,0.6)] dark:shadow-[0_16px_48px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.1)]";
 
     const { data: citationData, isLoading: isCitationLoading } = useCitation(memo.id, selectedCitationId || undefined);
 
@@ -98,8 +99,8 @@ export function MemoView({ memo, company, versions, auditLog, onUpdate, onApprov
             {/* OVERLAYS */}
             {isAuditLogOpen && (
                 <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
-                    <Card className="w-full max-w-2xl shadow-xl border-border">
-                        <CardContent className="p-6">
+                    <div className={`w-full max-w-2xl ${glass}`}>
+                        <div className="p-6">
                             <div className="flex justify-between items-center mb-6">
                                 <h3 className="text-xl font-bold font-heading">Audit Log</h3>
                                 <Button variant="ghost" size="icon" onClick={() => setIsAuditLogOpen(false)}><X className="w-5 h-5"/></Button>
@@ -112,15 +113,15 @@ export function MemoView({ memo, company, versions, auditLog, onUpdate, onApprov
                                     </div>
                                 ))}
                             </div>
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </div>
                 </div>
             )}
 
             {isHistoryOpen && (
                 <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
-                    <Card className="w-full max-w-3xl shadow-xl border-border">
-                        <CardContent className="p-6">
+                    <div className={`w-full max-w-3xl ${glass}`}>
+                        <div className="p-6">
                             <div className="flex justify-between items-center mb-6">
                                 <h3 className="text-xl font-bold font-heading">Version History</h3>
                                 <Button variant="ghost" size="icon" onClick={() => setIsHistoryOpen(false)}><X className="w-5 h-5"/></Button>
@@ -133,8 +134,8 @@ export function MemoView({ memo, company, versions, auditLog, onUpdate, onApprov
                                     </div>
                                 ))}
                             </div>
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -182,7 +183,7 @@ export function MemoView({ memo, company, versions, auditLog, onUpdate, onApprov
 
             <div className="w-full flex flex-col xl:flex-row gap-8 items-start">
                 {/* Left Pane: Document */}
-                <div className="w-full xl:w-[65%] flex flex-col bg-card rounded-xl border border-border p-5 md:p-12 shadow-sm min-w-0">
+                <div className={`w-full xl:w-[65%] flex flex-col p-5 md:p-12 min-w-0 ${glass}`}>
                     <header className="mb-8 md:mb-10">
                         <h1 className="font-heading text-2xl md:text-4xl text-foreground font-bold leading-tight mb-4 break-words">Investment Memorandum: {company.name} ({company.ticker})</h1>
                         <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground w-full">
@@ -252,8 +253,8 @@ export function MemoView({ memo, company, versions, auditLog, onUpdate, onApprov
 
                 {/* Right Pane: Interactive SEC Inspector */}
                 <div className="w-full xl:w-[35%] flex flex-col xl:sticky xl:top-32 min-w-0">
-                    <Card className="border-border shadow-md">
-                        <CardContent className="p-5 md:p-6 flex flex-col">
+                    <div className={glass}>
+                        <div className="p-5 md:p-6 flex flex-col">
                             <div className="flex flex-wrap items-center justify-between pb-4 border-b border-border mb-6 gap-3">
                                 <div className="flex items-center gap-2">
                                     <FileCheck className="w-5 h-5 text-primary shrink-0" />
@@ -301,8 +302,8 @@ export function MemoView({ memo, company, versions, auditLog, onUpdate, onApprov
                             ) : (
                                 <div className="py-8 text-destructive text-sm text-center">Failed to load citation source.</div>
                             )}
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

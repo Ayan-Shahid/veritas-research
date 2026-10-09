@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Bookmark, Trash2, ArrowRight, Loader2, Building, Plus } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +20,8 @@ interface WatchlistViewProps {
 
 export function WatchlistView({ organization, watchlist, isLoading, onRemove, isRemovingId, onAdd, isAdding }: WatchlistViewProps) {
     const [newCompanyId, setNewCompanyId] = useState("");
+
+    const glass = "rounded-xl text-card-foreground backdrop-saturate-150 border border-foreground/5 backdrop-blur-xl bg-gradient-to-br from-card/20 to-card/5 dark:from-card/20 dark:to-background/5 shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_1px_rgba(255,255,255,0.6)] dark:shadow-[0_16px_48px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.1)]";
 
     const handleAdd = (e: React.FormEvent) => {
         e.preventDefault();
@@ -66,17 +67,17 @@ export function WatchlistView({ organization, watchlist, isLoading, onRemove, is
                     <span>Loading watchlist...</span>
                 </div>
             ) : watchlist.length === 0 ? (
-                <Card className="border-border">
-                    <CardContent className="p-12 text-center text-muted-foreground flex flex-col items-center">
+                <div className={glass}>
+                    <div className="p-12 text-center text-muted-foreground flex flex-col items-center">
                         <Bookmark className="w-8 h-8 mb-4 opacity-20" />
                         <span>Your watchlist is currently empty.</span>
-                    </CardContent>
-                </Card>
+                    </div>
+                </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     {watchlist.map((entry) => (
-                        <Card key={entry.company_id} className="border-border shadow-sm flex flex-col group">
-                            <CardContent className="p-5 flex flex-col gap-4 flex-1">
+                        <div key={entry.company_id} className={`flex flex-col group ${glass}`}>
+                            <div className="p-5 flex flex-col gap-4 flex-1">
                                 <div className="flex items-start justify-between border-b border-border pb-4">
                                     <div className="flex flex-col gap-1">
                                         <Badge variant="outline" className="w-fit bg-muted">Target ID: {entry.company_id.slice(0, 8)}</Badge>
@@ -97,11 +98,11 @@ export function WatchlistView({ organization, watchlist, isLoading, onRemove, is
                                         Added {new Date().toLocaleDateString()}
                                     </span>
                                     <Button render={<Link href={`/companies/${entry.company_id}`} />} variant="ghost" size="sm" className="text-primary hover:bg-primary/10">
-                                            Analyze <ArrowRight className="w-3 h-3 ml-1" />
+                                        Analyze <ArrowRight className="w-3 h-3 ml-1" />
                                     </Button>
                                 </div>
-                            </CardContent>
-                        </Card>
+                            </div>
+                        </div>
                     ))}
                 </div>
             )}

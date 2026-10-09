@@ -10,7 +10,7 @@ from app.api.routes import (
     health,
     memos,
     organizations,
-    watchlist,
+    watchlist, notifications,
 )
 from app.core.config import settings
 
@@ -33,6 +33,8 @@ app.include_router(memos.router, tags=["memos"])
 app.include_router(chunks.router, tags=["chunks"])
 app.include_router(eval_runs.router, tags=["eval"])
 app.include_router(fine_tune_runs.router, tags=["fine-tuning"])
+
+app.include_router(notifications.router, tags=["notifications"])
 
 
 @app.get("/")

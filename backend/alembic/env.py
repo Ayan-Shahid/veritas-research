@@ -21,6 +21,7 @@ from app.models import (  # noqa: F401 - register models
     organization,
     user,
     watchlist_item,
+    notification
 )
 
 config = context.config

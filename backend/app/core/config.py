@@ -14,6 +14,12 @@ class Settings(BaseSettings):
     CORS_ORIGINS: list[str] = ["http://localhost:3000"]
     CELERY_BROKER_URL: str = "redis://localhost:6379/0"
     CELERY_RESULT_BACKEND: str = "redis://localhost:6379/0"
+    # Supabase Auth (GoTrue). Self-hosted: SUPABASE_JWT_SECRET = GoTrue's GOTRUE_JWT_SECRET (HS256)
+    # and SUPABASE_URL empty. SUPABASE_URL is only for asymmetric keys fetched from its JWKS.
+    SUPABASE_URL: str = ""
+    SUPABASE_JWT_SECRET: str = ""
+    # Reject tokens whose GoTrue session was revoked (needs auth_bridge from deploy/initdb).
+    AUTH_SESSION_CHECK: bool = True
 
     ANTHROPIC_API_KEY: str = ""
     ANTHROPIC_MODEL: str = "claude-sonnet-5"

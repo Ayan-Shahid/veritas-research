@@ -2,7 +2,6 @@
 
 import { RefreshCw, Zap, Trash2, Sparkles, FileText, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { Company, Filing, Memo, Job } from "@/types";
@@ -27,13 +26,14 @@ export function CompanyDetailView({
                                       isIngestingId, isPurgingId
                                   }: CompanyDetailViewProps) {
     const isGenerating = !!activeJob && (activeJob.status === "pending" || activeJob.status === "processing");
+    const glass = "rounded-xl text-card-foreground backdrop-saturate-150 border border-foreground/5 backdrop-blur-xl bg-gradient-to-br from-card/20 to-card/5 dark:from-card/20 dark:to-background/5 shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_1px_rgba(255,255,255,0.6)] dark:shadow-[0_16px_48px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.1)]";
 
     return (
         <div className="min-h-screen flex flex-col bg-background">
             <div className="p-4 md:p-6 flex flex-col gap-6">
 
                 {/* Header */}
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-card p-4 md:p-6 rounded-xl border border-border">
+                <div className={`flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 md:p-6 ${glass}`}>
                     <div className="flex items-center gap-4">
                         <div className="flex flex-col">
                             <div className="flex flex-wrap items-center gap-2 md:gap-3">
@@ -52,16 +52,16 @@ export function CompanyDetailView({
                 <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
                     {/* Filings Ledger */}
                     <section className="xl:col-span-7 flex flex-col gap-4">
-                        <Card>
-                            <CardHeader className="pb-4">
+                        <div className={glass}>
+                            <div className="p-6 pb-4 flex flex-col space-y-1.5">
                                 <div className="flex items-start md:items-center gap-2">
                                     <FileText className="w-5 h-5 text-primary shrink-0 mt-0.5 md:mt-0" />
                                     <div className="flex flex-col">
-                                        <CardTitle className="text-lg">SEC Filings & Ingestion Repository</CardTitle>
-                                        <CardDescription className="font-mono text-xs mt-1 leading-relaxed">Continuous real-time ingestion, tabular extraction & semantic chunking</CardDescription>
+                                        <h3 className="font-semibold leading-none tracking-tight text-lg">SEC Filings & Ingestion Repository</h3>
+                                        <p className="text-sm text-muted-foreground font-mono text-xs mt-1 leading-relaxed">Continuous real-time ingestion, tabular extraction & semantic chunking</p>
                                     </div>
                                 </div>
-                            </CardHeader>
+                            </div>
 
                             {filings.length === 0 && (
                                 <div className="p-6 text-center text-sm text-muted-foreground border-t border-border">
@@ -182,14 +182,14 @@ export function CompanyDetailView({
                                     </div>
                                 ))}
                             </div>
-                        </Card>
+                        </div>
                     </section>
 
                     {/* Right Column: Orchestrator & History */}
                     <section className="xl:col-span-5 flex flex-col gap-6">
-                        <Card className="relative overflow-hidden border-primary/20 shadow-md">
+                        <div className={`relative overflow-hidden ${glass}`}>
                             <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-primary/5 blur-3xl pointer-events-none" />
-                            <CardContent className="p-4 md:p-6 flex flex-col gap-6">
+                            <div className="p-4 md:p-6 flex flex-col gap-6">
                                 <div className="flex flex-col">
                                     <Badge variant="secondary" className="w-fit bg-primary/10 text-primary mb-3">
                                         <Sparkles className="w-3 h-3 mr-1" /> Veritas LLM Pipeline
@@ -208,18 +208,18 @@ export function CompanyDetailView({
                                         <><Sparkles className="w-5 h-5 mr-2 text-primary-foreground group-hover:rotate-12 transition-transform" /> Generate Memo <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" /></>
                                     )}
                                 </Button>
-                            </CardContent>
-                        </Card>
+                            </div>
+                        </div>
 
-                        <Card>
-                            <CardHeader className="pb-3 border-b border-border">
+                        <div className={glass}>
+                            <div className="p-6 pb-3 border-b border-border flex flex-col space-y-1.5">
                                 <div className="flex items-center justify-between">
-                                    <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+                                    <h3 className="font-semibold leading-none tracking-tight text-sm font-bold uppercase tracking-wider flex items-center gap-2">
                                         <FileText className="w-4 h-4 text-primary" /> Historical Memos
-                                    </CardTitle>
+                                    </h3>
                                 </div>
-                            </CardHeader>
-                            <CardContent className="p-4 flex flex-col gap-2">
+                            </div>
+                            <div className="p-4 flex flex-col gap-2">
                                 {memos.length === 0 && (
                                     <div className="text-sm text-muted-foreground text-center py-4">No memos generated yet.</div>
                                 )}
@@ -243,8 +243,8 @@ export function CompanyDetailView({
                                         </div>
                                     </div>
                                 ))}
-                            </CardContent>
-                        </Card>
+                            </div>
+                        </div>
                     </section>
                 </div>
             </div>

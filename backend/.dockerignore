@@ -1,0 +1,10 @@
+.env*
+__pycache__
+*.py[cod]
+.pytest_cache
+.ruff_cache
+.venv
+venv
+tests
+all_previews.json
+generated_memos.json

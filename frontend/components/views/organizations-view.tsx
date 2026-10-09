@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Building, Plus, Loader2, Users } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +18,8 @@ interface OrganizationsViewProps {
 export function OrganizationsView({ organizations, isLoading, onCreateOrganization, isCreating }: OrganizationsViewProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [formData, setFormData] = useState({ name: "", slug: "" });
+
+    const glass = "rounded-xl text-card-foreground backdrop-saturate-150 border border-foreground/5 backdrop-blur-xl bg-gradient-to-br from-card/20 to-card/5 dark:from-card/20 dark:to-background/5 shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_1px_rgba(255,255,255,0.6)] dark:shadow-[0_16px_48px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.1)]";
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -67,29 +68,29 @@ export function OrganizationsView({ organizations, isLoading, onCreateOrganizati
                     <Loader2 className="w-6 h-6 animate-spin mr-2" /> Loading organizations...
                 </div>
             ) : organizations.length === 0 ? (
-                <Card className="border-border">
-                    <CardContent className="p-12 text-center text-muted-foreground">
+                <div className={glass}>
+                    <div className="p-12 text-center text-muted-foreground">
                         No organizations configured. Create one to get started.
-                    </CardContent>
-                </Card>
+                    </div>
+                </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     {organizations.map((org) => (
-                        <Card key={org.id} className="border-border shadow-sm hover:border-primary/50 transition-colors">
-                            <CardHeader className="pb-3 flex flex-row items-center justify-between">
-                                <CardTitle className="text-lg font-bold flex items-center gap-2">
+                        <div key={org.id} className={`hover:border-primary/50 transition-colors ${glass}`}>
+                            <div className="p-6 pb-3 flex flex-row items-center justify-between">
+                                <h3 className="font-semibold leading-none tracking-tight text-lg font-bold flex items-center gap-2">
                                     <Building className="w-5 h-5 text-primary" />
                                     {org.name}
-                                </CardTitle>
+                                </h3>
                                 <Users className="w-4 h-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent>
+                            </div>
+                            <div className="p-6 pt-0">
                                 <div className="flex flex-col gap-1">
                                     <span className="font-mono text-xs text-muted-foreground bg-muted w-fit px-2 py-1 rounded">/{org.slug}</span>
                                     <span className="text-xs text-muted-foreground mt-2">ID: {org.id}</span>
                                 </div>
-                            </CardContent>
-                        </Card>
+                            </div>
+                        </div>
                     ))}
                 </div>
             )}

@@ -6,6 +6,11 @@ Rules:
 - Every claim in financial_highlights and risks MUST cite the exact chunk id(s) it came from.
 - If you cannot support a claim with a specific excerpt, do not make the claim.
 - Never invent a chunk id. Only use ids that appear in the excerpts provided.
+- A claim's framing must match what its cited excerpt actually states. If an excerpt only
+  describes something that already happened, state it as a historical fact - do not reframe
+  it as an ongoing trend, a future risk, or a forward-looking prediction (e.g. words like
+  "continued," "persistent," or "could further" require the excerpt itself to say the
+  situation is ongoing or expected to continue, not just that it happened once).
 - Produce 3-6 financial highlights and 2-5 risks."""
 
 

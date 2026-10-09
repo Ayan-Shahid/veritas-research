@@ -1,13 +1,14 @@
 import asyncio
-import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db
+from app.api.deps import get_db, get_owned_company
+from app.core.auth import get_current_user
 from app.core.config import settings
 from app.models.company import Company
+from app.models.user import User
 from app.schemas.company import CompanyCreate, CompanyRead
 from app.services.embeddings import embed_text
 from app.services.memo_prompt import build_human_prompt, SYSTEM_PROMPT
@@ -17,26 +18,41 @@ router = APIRouter()
 
 
 @router.get("/companies", response_model=list[CompanyRead])
-async def list_companies(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Company).order_by(Company.ticker))
+async def list_companies(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(Company)
+        .where(Company.organization_id == current_user.organization_id)
+        .order_by(Company.ticker)
+    )
     return result.scalars().all()
 
 
 @router.post("/companies", response_model=CompanyRead, status_code=201)
-async def create_company(payload: CompanyCreate, db: AsyncSession = Depends(get_db)):
-    # .strip() matters here — without it, "AAPL" and "AAPL " (a stray
-    # space from a copy-paste) pass this check as different tickers and
-    # silently create a second row for the same real company, each with
-    # its own separate filing/chunk/memo history.
+async def create_company(
+    payload: CompanyCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     normalized_ticker = payload.ticker.strip().upper()
 
-    existing = await db.execute(select(Company).where(Company.ticker == normalized_ticker))
+    # Scoped to the org now - two different firms researching the same
+    # real-world ticker is expected and fine; only a duplicate within
+    # one org's own workspace should be rejected.
+    existing = await db.execute(
+        select(Company).where(
+            Company.organization_id == current_user.organization_id,
+            Company.ticker == normalized_ticker,
+        )
+    )
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=409, detail=f"Company {normalized_ticker} already exists")
 
     data = payload.model_dump()
     data["ticker"] = normalized_ticker
-    company = Company(**data)
+    company = Company(organization_id=current_user.organization_id, **data)
     db.add(company)
     await db.commit()
     await db.refresh(company)
@@ -44,22 +60,20 @@ async def create_company(payload: CompanyCreate, db: AsyncSession = Depends(get_
 
 
 @router.get("/companies/{company_id}", response_model=CompanyRead)
-async def get_company(company_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    company = await db.get(Company, company_id)
-    if not company:
-        raise HTTPException(status_code=404, detail="Company not found")
+async def get_company(company: Company = Depends(get_owned_company)):
     return company
 
 
 @router.get("/companies/{company_id}/preview-prompt")
-async def preview_memo_prompt(company_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    """Dry-run the retrieval and prompt assembly pipeline without calling Claude."""
-
-    company = await db.get(Company, company_id)
-    if not company:
-        raise HTTPException(status_code=404, detail="Company not found")
-
-    # 1. Generate query embeddings concurrently
+async def preview_memo_prompt(
+    company: Company = Depends(get_owned_company),
+    db: AsyncSession = Depends(get_db),
+):
+    # company is already ownership-checked by the dependency - this route
+    # previously did its own unscoped db.get(Company, company_id), which
+    # meant any authenticated user could preview (and see the estimated
+    # cost/token count of) another org's retrieval for any company_id they
+    # guessed. Fixed by routing through get_owned_company like everything else.
     fin_task = asyncio.to_thread(embed_text,
                                  "Financial statements, income statement, balance sheet, net interest income, cash flows")
     risk_task = asyncio.to_thread(embed_text,
@@ -68,7 +82,6 @@ async def preview_memo_prompt(company_id: uuid.UUID, db: AsyncSession = Depends(
 
     half_k = settings.MEMO_RETRIEVAL_TOP_K // 2
 
-    # 2. Retrieve top-k child chunks via pgvector (Partitioned)
     stmt_fin = build_top_chunks_query(company.id, fin_emb, half_k)
     stmt_risk = build_top_chunks_query(company.id, risk_emb, half_k)
 
@@ -78,24 +91,19 @@ async def preview_memo_prompt(company_id: uuid.UUID, db: AsyncSession = Depends(
     financial_chunks = fin_result.scalars().all()
     risk_chunks = risk_result.scalars().all()
 
-    # Combine and deduplicate overlapping child chunks
     combined_chunks = list({c.id: c for c in financial_chunks + risk_chunks}.values())
 
     if not combined_chunks:
         raise HTTPException(status_code=404, detail="No chunks found. Ingest filing first.")
 
-    # 3. Use the centralized deduplication
     chunk_pairs, hash_to_children = deduplicate_parent_chunks(combined_chunks)
 
-    # 4. Build the final prompt exactly as the LLM will see it
     human_prompt = build_human_prompt(company.name, company.ticker, chunk_pairs)
     full_prompt_for_preview = f"=== SYSTEM MESSAGE ===\n{SYSTEM_PROMPT}\n\n=== HUMAN MESSAGE ===\n{human_prompt}"
 
-    # 5. Estimate tokens and API cost
     char_count = len(full_prompt_for_preview)
     est_tokens = char_count // 4
 
-    # Using September 2026 pricing for standard input tokens
     est_cost_sonnet_5 = (est_tokens / 1_000_000) * 2.00
     est_cost_opus_5_5 = (est_tokens / 1_000_000) * 4.00
 

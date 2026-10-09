@@ -1,0 +1,235 @@
+name: veritas
+
+# Production stack for one machine. Nothing here publishes a port to the host: the only way in
+# is the outbound Cloudflare Tunnel, which forwards to Caddy, which routes to web / api / auth
+# on this private network. Start with:  docker compose --env-file .env up -d --build
+
+x-logging: &logging
+  driver: json-file
+  options: { max-size: "10m", max-file: "3" }
+
+x-backend: &backend
+  build:
+    context: ../backend
+  image: veritas-backend:local
+  restart: unless-stopped
+  logging: *logging
+  environment:
+    ENV: production
+    DATABASE_URL: postgresql+asyncpg://veritas:${APP_DB_PASSWORD}@postgres:5432/veritas
+    REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+    CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+    CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD}@redis:6379/0
+    SECRET_KEY: ${SECRET_KEY}
+    # Access tokens are HS256 JWTs signed by GoTrue with this secret.
+    SUPABASE_JWT_SECRET: ${JWT_SECRET}
+    SUPABASE_URL: ""
+    AUTH_SESSION_CHECK: "true"
+    ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+    EDGAR_USER_AGENT: ${EDGAR_USER_AGENT}
+    CORS_ORIGINS: '["https://${DOMAIN}"]'
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      # The superuser must be called "postgres": one of GoTrue's migrations grants to that role.
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: veritas
+      # Read by initdb/01-bootstrap.sh on first start only.
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD}
+      AUTH_DB_PASSWORD: ${AUTH_DB_PASSWORD}
+    command: >
+      postgres
+      -c shared_buffers=1GB
+      -c effective_cache_size=4GB
+      -c work_mem=32MB
+      -c maintenance_work_mem=256MB
+      -c max_connections=60
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d:ro
+    shm_size: 256mb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d veritas"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    logging: *logging
+    # noeviction: the Celery queue lives here, so refuse writes at the limit instead of evicting queued jobs.
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD}
+      --appendonly yes
+      --maxmemory 512mb
+      --maxmemory-policy noeviction
+    environment:
+      REDISCLI_AUTH: ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Supabase Auth (GoTrue), self-hosted. It creates and migrates its own `auth` schema on start.
+  # Variable names follow the auth service in Supabase's official self-hosting compose file.
+  # GoTrue IGNORES unknown variables silently: check behaviour with /auth/v1/settings after changes.
+  auth:
+    image: ${AUTH_IMAGE}
+    restart: unless-stopped
+    logging: *logging
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9999/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: "9999"
+      API_EXTERNAL_URL: https://${DOMAIN}/auth/v1
+
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${AUTH_DB_PASSWORD}@postgres:5432/veritas
+
+      GOTRUE_SITE_URL: https://${DOMAIN}
+      GOTRUE_URI_ALLOW_LIST: https://${DOMAIN}
+      GOTRUE_DISABLE_SIGNUP: "false"
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+      GOTRUE_EXTERNAL_PHONE_ENABLED: "false"
+      GOTRUE_EXTERNAL_ANONYMOUS_USERS_ENABLED: "true"
+
+      GOTRUE_JWT_SECRET: ${JWT_SECRET}
+      GOTRUE_JWT_EXP: "3600"
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_JWT_ISSUER: https://${DOMAIN}/auth/v1
+      GOTRUE_SECURITY_REFRESH_TOKEN_ROTATION_ENABLED: "true"
+      # Password changes need the current password. GoTrue skips this for sessions that began with an
+      # emailed code, so the app (lib/auth/actions.ts) also checks it itself for every session.
+      GOTRUE_SECURITY_UPDATE_PASSWORD_REQUIRE_CURRENT_PASSWORD: "true"
+
+      # Per-IP limits use this header. Browser requests come through Cloudflare, which overwrites it;
+      # server actions reach GoTrue over this network and forward the visitor's value.
+      GOTRUE_RATE_LIMIT_HEADER: CF-Connecting-IP
+      GOTRUE_RATE_LIMIT_EMAIL_SENT: "30"
+
+      GOTRUE_MAILER_AUTOCONFIRM: "false"
+      GOTRUE_MAILER_OTP_EXP: "600"
+      GOTRUE_MAILER_OTP_LENGTH: "6"
+      GOTRUE_SMTP_HOST: ${SMTP_HOST}
+      GOTRUE_SMTP_PORT: ${SMTP_PORT}
+      GOTRUE_SMTP_USER: ${SMTP_USER}
+      GOTRUE_SMTP_PASS: ${SMTP_PASS}
+      GOTRUE_SMTP_ADMIN_EMAIL: ${SMTP_ADMIN_EMAIL}
+      GOTRUE_SMTP_SENDER_NAME: ${SMTP_SENDER_NAME}
+      GOTRUE_SMTP_MAX_FREQUENCY: 60s
+
+      # Code-only templates (email-templates/), fetched over HTTP from Caddy's internal listener.
+      GOTRUE_MAILER_TEMPLATES_RECOVERY: http://caddy:8081/recovery.html
+      GOTRUE_MAILER_TEMPLATES_EMAIL_CHANGE: http://caddy:8081/email-change.html
+      GOTRUE_MAILER_TEMPLATES_CONFIRMATION: http://caddy:8081/confirmation.html
+      GOTRUE_MAILER_SUBJECTS_RECOVERY: Your Veritas password reset code
+      GOTRUE_MAILER_SUBJECTS_EMAIL_CHANGE: Your Veritas verification code
+      GOTRUE_MAILER_SUBJECTS_CONFIRMATION: Confirm your Veritas email
+
+  migrate:
+    <<: *backend
+    restart: "no"
+    command: alembic upgrade head
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    <<: *backend
+    command: >
+      uvicorn app.main:app --host 0.0.0.0 --port 8000
+      --proxy-headers --forwarded-allow-ips="*" --workers 1 --root-path /api
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      # The API's session check calls a function that reads GoTrue's auth.sessions.
+      auth:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  worker:
+    <<: *backend
+    command: celery -A app.core.celery_app worker --loglevel=info --concurrency=2 --max-tasks-per-child=50
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile.prod
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: https://${DOMAIN}
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${ANON_KEY}
+        NEXT_PUBLIC_API_URL: https://${DOMAIN}/api
+        NEXT_PUBLIC_SITE_URL: https://${DOMAIN}
+    image: veritas-web:local
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      # Server actions reach GoTrue through Caddy on this network (server-side only, not baked in).
+      SUPABASE_INTERNAL_URL: http://caddy
+    depends_on:
+      api:
+        condition: service_started
+      auth:
+        condition: service_healthy
+
+  # Front door: one origin for everything, so there is no CORS and cookies stay same-site.
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    logging: *logging
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./email-templates:/srv/templates:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+      - api
+      - auth
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    logging: *logging
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - caddy
+
+volumes:
+  pg_data:
+  redis_data:
+  caddy_data:
+  caddy_config:

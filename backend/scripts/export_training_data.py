@@ -59,17 +59,21 @@ def export(min_examples: int = 1) -> Path:
                 continue
 
             company = db.get(Company, memo.company_id)
+            if company is None:
+                skipped += 1
+                continue
 
             chunk_pairs = []
             valid_reconstruction = True
 
             # Reconstruct the context using the citation hashes
-            for citation_id, child_ids in memo.citation_map.items():
+            citation_ids = memo.citation_order or list(memo.citation_map.keys())
+            for citation_id in citation_ids:
+                child_ids = memo.citation_map.get(citation_id)
                 if not child_ids:
                     valid_reconstruction = False
                     break
 
-                # We only need the first child to retrieve the shared parent_content
                 first_child_uuid = uuid.UUID(child_ids[0])
                 chunk = db.get(FilingChunk, first_child_uuid)
 

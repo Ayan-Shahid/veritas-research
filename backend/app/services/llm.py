@@ -19,7 +19,7 @@ def generate_memo_draft(
     company_name: str, ticker: str, context_chunks: list[tuple[str, str]]
 ) -> MemoGeneration:
     llm = get_llm()
-    structured_llm = llm.with_structured_output(MemoGeneration)
+    structured_llm = llm.with_structured_output(MemoGeneration, method="json_schema")
 
     # 1. Delegate to the unified prompt builder
     human_content = build_human_prompt(company_name, ticker, context_chunks)

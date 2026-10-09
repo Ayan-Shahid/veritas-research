@@ -5,13 +5,15 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
-from app.api.deps import get_db
+from app.api.deps import get_db, get_owned_company, get_owned_memo, get_owned_job
+from app.core.auth import get_current_user
 from app.models.audit_log import AuditLog
 from app.models.company import Company
 from app.models.filing_chunk import FilingChunk
 from app.models.job import Job
 from app.models.memo import Memo
 from app.models.memo_version import MemoVersion
+from app.models.user import User
 from app.schemas.memo import AuditLogRead, JobRead, MemoRead, MemoUpdate, MemoVersionRead
 from app.tasks.memo_tasks import generate_memo_task
 
@@ -19,18 +21,18 @@ router = APIRouter()
 
 
 @router.post("/companies/{company_id}/memos/generate", response_model=JobRead, status_code=202)
-async def trigger_memo_generation(company_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    """Enqueue memo generation and return immediately with a job to poll.
-
-    Generation involves a vector search plus an LLM call — several
-    seconds, sometimes more — so this hands back a job_id rather than
-    holding the HTTP request open. Poll GET /jobs/{id} for status.
-    """
-    company = await db.get(Company, company_id)
-    if not company:
-        raise HTTPException(status_code=404, detail="Company not found")
-
-    job = Job(job_type="memo_generation", company_id=company_id, status="pending")
+async def trigger_memo_generation(
+    company: Company = Depends(get_owned_company),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    job = Job(
+        job_type="memo_generation",
+        company_id=company.id,
+        organization_id=company.organization_id,
+        user_id=current_user.id,
+        status="pending",
+    )
     db.add(job)
     await db.commit()
     await db.refresh(job)
@@ -41,43 +43,33 @@ async def trigger_memo_generation(company_id: uuid.UUID, db: AsyncSession = Depe
 
 
 @router.get("/jobs/{job_id}", response_model=JobRead)
-async def get_job(job_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    job = await db.get(Job, job_id)
-    if not job:
-        raise HTTPException(status_code=404, detail="Job not found")
+async def get_job(job: Job = Depends(get_owned_job)):
     return job
 
 
 @router.get("/companies/{company_id}/memos", response_model=list[MemoRead])
-async def list_memos(company_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def list_memos(
+    company: Company = Depends(get_owned_company),
+    db: AsyncSession = Depends(get_db),
+):
     result = await db.execute(
-        select(Memo).where(Memo.company_id == company_id).order_by(Memo.created_at.desc())
+        select(Memo).where(Memo.company_id == company.id).order_by(Memo.created_at.desc())
     )
     return result.scalars().all()
 
 
 @router.get("/memos/{memo_id}", response_model=MemoRead)
-async def get_memo(memo_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    memo = await db.get(Memo, memo_id)
-    if not memo:
-        raise HTTPException(status_code=404, detail="Memo not found")
+async def get_memo(memo: Memo = Depends(get_owned_memo)):
     return memo
 
 
 @router.patch("/memos/{memo_id}", response_model=MemoRead)
-async def update_memo(memo_id: uuid.UUID, payload: MemoUpdate, db: AsyncSession = Depends(get_db)):
-    """Edit a memo's content.
-
-    The content being replaced is snapshotted into memo_versions
-    first, so the edit is recoverable — this is a full-content
-    replace, not a patch of individual fields, matching how the
-    frontend editor round-trips the whole thesis/highlights/risks
-    blob.
-    """
-    memo = await db.get(Memo, memo_id)
-    if not memo:
-        raise HTTPException(status_code=404, detail="Memo not found")
-
+async def update_memo(
+    payload: MemoUpdate,
+    memo: Memo = Depends(get_owned_memo),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     db.add(MemoVersion(memo_id=memo.id, content=memo.content))
 
     memo.content = payload.model_dump()
@@ -87,6 +79,7 @@ async def update_memo(memo_id: uuid.UUID, payload: MemoUpdate, db: AsyncSession 
             target_type="memo",
             target_id=memo.id,
             company_id=memo.company_id,
+            user_id=current_user.id,
         )
     )
 
@@ -96,34 +89,37 @@ async def update_memo(memo_id: uuid.UUID, payload: MemoUpdate, db: AsyncSession 
 
 
 @router.get("/memos/{memo_id}/versions", response_model=list[MemoVersionRead])
-async def list_memo_versions(memo_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    memo = await db.get(Memo, memo_id)
-    if not memo:
-        raise HTTPException(status_code=404, detail="Memo not found")
-
+async def list_memo_versions(
+    memo: Memo = Depends(get_owned_memo),
+    db: AsyncSession = Depends(get_db),
+):
     result = await db.execute(
         select(MemoVersion)
-        .where(MemoVersion.memo_id == memo_id)
+        .where(MemoVersion.memo_id == memo.id)
         .order_by(MemoVersion.created_at.desc())
     )
     return result.scalars().all()
 
 
 @router.post("/memos/{memo_id}/approve", response_model=MemoRead)
-async def approve_memo(memo_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    return await _set_memo_status(memo_id, "approved", db)
+async def approve_memo(
+    memo: Memo = Depends(get_owned_memo),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return await _set_memo_status(memo, "approved", db, current_user)
 
 
 @router.post("/memos/{memo_id}/reject", response_model=MemoRead)
-async def reject_memo(memo_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    return await _set_memo_status(memo_id, "rejected", db)
+async def reject_memo(
+    memo: Memo = Depends(get_owned_memo),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return await _set_memo_status(memo, "rejected", db, current_user)
 
 
-async def _set_memo_status(memo_id: uuid.UUID, status: str, db: AsyncSession) -> Memo:
-    memo = await db.get(Memo, memo_id)
-    if not memo:
-        raise HTTPException(status_code=404, detail="Memo not found")
-
+async def _set_memo_status(memo: Memo, status: str, db: AsyncSession, current_user: User) -> Memo:
     memo.status = status
     db.add(
         AuditLog(
@@ -131,6 +127,7 @@ async def _set_memo_status(memo_id: uuid.UUID, status: str, db: AsyncSession) ->
             target_type="memo",
             target_id=memo.id,
             company_id=memo.company_id,
+            user_id=current_user.id,
         )
     )
 
@@ -140,39 +137,38 @@ async def _set_memo_status(memo_id: uuid.UUID, status: str, db: AsyncSession) ->
 
 
 @router.get("/memos/{memo_id}/audit-log", response_model=list[AuditLogRead])
-async def get_memo_audit_log(memo_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    memo = await db.get(Memo, memo_id)
-    if not memo:
-        raise HTTPException(status_code=404, detail="Memo not found")
-
+async def get_memo_audit_log(
+    memo: Memo = Depends(get_owned_memo),
+    db: AsyncSession = Depends(get_db),
+):
     result = await db.execute(
         select(AuditLog)
-        .where(AuditLog.target_type == "memo", AuditLog.target_id == memo_id)
+        .where(AuditLog.target_type == "memo", AuditLog.target_id == memo.id)
         .order_by(AuditLog.created_at.desc())
     )
     return result.scalars().all()
 
 
-@router.get("/{memo_id}/citations/{citation_id}")
-async def get_memo_citation(memo_id: uuid.UUID, citation_id: str, db: AsyncSession = Depends(get_db)):
+@router.get("/memos/{memo_id}/citations/{citation_id}")
+async def get_memo_citation(
+    citation_id: str,
+    memo: Memo = Depends(get_owned_memo),
+    db: AsyncSession = Depends(get_db),
+):
     """Resolves a parent block citation hash into the actual SEC filing text."""
-    memo = await db.get(Memo, memo_id)
-    if not memo or not memo.citation_map:
+    if not memo.citation_map:
         raise HTTPException(status_code=404, detail="Memo or citations not found")
 
-    # 1. Look up the list of child chunk IDs tied to this parent hash
     child_ids = memo.citation_map.get(citation_id)
     if not child_ids:
         raise HTTPException(status_code=404, detail="Invalid citation ID")
 
-    # 2. Fetch just the first child chunk (since all children in this list share the exact same parent_content)
     first_child_id = uuid.UUID(child_ids[0])
     chunk = await db.get(FilingChunk, first_child_id)
 
     if not chunk or not chunk.chunk_metadata:
         raise HTTPException(status_code=404, detail="Source chunk missing")
 
-    # 3. Return the full parent context to highlight in the UI
     return {
         "citation_id": citation_id,
         "source_url": chunk.chunk_metadata.get("source_url"),
@@ -182,19 +178,18 @@ async def get_memo_citation(memo_id: uuid.UUID, citation_id: str, db: AsyncSessi
 
 
 @router.delete("/memos/{memo_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_memo(memo_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    """Deletes a memo and logs the action to the audit trail."""
-    memo = await db.get(Memo, memo_id)
-    if not memo:
-        raise HTTPException(status_code=404, detail="Memo not found")
-
-    # Record the deletion in the audit log before removing the record
+async def delete_memo(
+    memo: Memo = Depends(get_owned_memo),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     db.add(
         AuditLog(
             action="memo_deleted",
             target_type="memo",
             target_id=memo.id,
             company_id=memo.company_id,
+            user_id=current_user.id,
         )
     )
 

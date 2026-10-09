@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, date
 
-from sqlalchemy import String, DateTime, Date, ForeignKey, Text
+from sqlalchemy import String, DateTime, Date, ForeignKey, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -10,6 +10,15 @@ from app.core.database import Base
 
 class Filing(Base):
     __tablename__ = "filings"
+
+    __table_args__ = (
+        UniqueConstraint("organization_id", "accession_number", name="uq_filing_org_accession"),
+    )
+
+
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False, index=True
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     company_id: Mapped[uuid.UUID] = mapped_column(

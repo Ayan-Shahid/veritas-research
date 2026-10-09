@@ -14,7 +14,7 @@ jobs:
         working-directory: backend
     services:
       postgres:
-        image: postgres:16-alpine
+        image: pgvector/pgvector:pg16
         env:
           POSTGRES_USER: veritas
           POSTGRES_PASSWORD: veritas
@@ -40,6 +40,11 @@ jobs:
 
       - name: Lint
         run: ruff check .
+
+      - name: Run database migrations
+        env:
+          DATABASE_URL: postgresql+asyncpg://veritas:veritas@localhost:5432/veritas_test
+        run: alembic upgrade head
 
       - name: Run tests
         env:

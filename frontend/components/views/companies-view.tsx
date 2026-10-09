@@ -3,7 +3,6 @@
 import {useState} from "react";
 import Link from "next/link";
 import {Search, Building2, FileText, ArrowRight, Star, Loader2, Plus} from "lucide-react";
-import {Card, CardContent} from "@/components/ui/card";
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
 import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger} from "@/components/ui/dialog";
@@ -33,6 +32,8 @@ export function CompaniesView({
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [formData, setFormData] = useState({ticker: "", name: "", cik: "", sector: ""});
 
+    const glass = "rounded-xl text-card-foreground backdrop-saturate-150 border border-foreground/5 backdrop-blur-xl bg-gradient-to-br from-card/20 to-card/5 dark:from-card/20 dark:to-background/5";
+
     const handleAddSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         onCreateCompany(formData);
@@ -41,7 +42,7 @@ export function CompaniesView({
     };
 
     return (
-        <div className="w-full px-4 md:px-6 py-6 md:py-8 flex flex-col gap-6 bg-background">
+        <div className="w-full px-4 md:px-6 py-6 md:py-8 flex flex-col gap-6">
 
             {/* Header & Controls */}
             <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
@@ -101,8 +102,8 @@ export function CompaniesView({
 
             {/* Metric Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card className="bg-card border-border">
-                    <CardContent className="p-6 flex items-center justify-between">
+                <div className={glass}>
+                    <div className="p-6 flex items-center justify-between">
                         <div className="flex flex-col">
                             <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Tracked Companies</span>
                             <div className="flex items-baseline gap-2">
@@ -111,10 +112,10 @@ export function CompaniesView({
                             </div>
                         </div>
                         <Building2 className="w-8 h-8 text-primary/20"/>
-                    </CardContent>
-                </Card>
-                <Card className="bg-card border-border">
-                    <CardContent className="p-6 flex items-center justify-between">
+                    </div>
+                </div>
+                <div className={glass}>
+                    <div className="p-6 flex items-center justify-between">
                         <div className="flex flex-col">
                             <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Ingested Filings</span>
                             <div className="flex items-baseline gap-2">
@@ -123,12 +124,12 @@ export function CompaniesView({
                             </div>
                         </div>
                         <FileText className="w-8 h-8 text-primary/20"/>
-                    </CardContent>
-                </Card>
+                    </div>
+                </div>
             </div>
 
             {/* Desktop Data Table */}
-            <Card className="hidden md:block border-border overflow-hidden">
+            <div className={`hidden md:block overflow-hidden ${glass}`}>
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
                         <thead className="text-[11px] uppercase tracking-wider text-muted-foreground bg-muted/50 border-b border-border font-bold">
@@ -177,27 +178,27 @@ export function CompaniesView({
                         </tbody>
                     </table>
                 </div>
-            </Card>
+            </div>
 
             {/* Mobile Data Cards */}
             <div className="flex flex-col gap-4 md:hidden">
                 {isLoading ? (
-                    <Card className="border-border">
-                        <CardContent className="p-8 text-center text-muted-foreground flex flex-col items-center justify-center">
+                    <div className={glass}>
+                        <div className="p-8 text-center text-muted-foreground flex flex-col items-center justify-center">
                             <Loader2 className="w-5 h-5 animate-spin mb-2"/>
                             <span className="text-sm">Loading equities...</span>
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </div>
                 ) : companies.length === 0 ? (
-                    <Card className="border-border">
-                        <CardContent className="p-8 text-center text-muted-foreground">
+                    <div className={glass}>
+                        <div className="p-8 text-center text-muted-foreground">
                             <span className="text-sm">No companies found in coverage universe.</span>
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </div>
                 ) : (
                     companies.map((company) => (
-                        <Card key={company.id} className="border-border shadow-sm">
-                            <CardContent className="p-5 flex flex-col gap-4">
+                        <div key={company.id} className={glass}>
+                            <div className="p-5 flex flex-col gap-4">
                                 <div className="flex items-center justify-between border-b border-border pb-4">
                                     <div className="flex items-center gap-3">
                                         <button className="text-muted-foreground hover:text-primary transition-colors shrink-0">
@@ -220,8 +221,8 @@ export function CompaniesView({
                                 <Button nativeButton={false} variant="outline" className="w-full mt-2 text-primary hover:bg-primary/10 transition-colors" render={<Link href={`/companies/${company.id}`}/>}>
                                     View Company <ArrowRight className="w-4 h-4 ml-2"/>
                                 </Button>
-                            </CardContent>
-                        </Card>
+                            </div>
+                        </div>
                     ))
                 )}
             </div>

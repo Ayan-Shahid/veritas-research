@@ -18,13 +18,16 @@ from app.models.audit_log import AuditLog
 from app.models.company import Company
 from app.models.filing_chunk import FilingChunk
 from app.models.job import Job
+from app.models.user import User
 from app.models.memo import Memo
+from app.models.notification import Notification
 from app.services.cache import get_cached_chunk_ids, set_cached_chunk_ids
 from app.services.embeddings import embed_text
 from app.services.grounding import strip_invalid_citations
 from app.services.llm import generate_memo_draft
 from app.services.retrieval import build_top_chunks_query
 from app.services.retrieval import deduplicate_parent_chunks
+from app.models.organization import Organization
 
 RETRIEVAL_QUERY = (
     "business overview, revenue growth, profitability, margins, "
@@ -42,39 +45,41 @@ def generate_memo_task(self, job_id: str) -> None:
         job.celery_task_id = self.request.id
         db.commit()
 
+        company_label = "this company"  # fallback if the company lookup itself fails
         try:
             company = db.get(Company, job.company_id)
             if company is None:
                 raise ValueError(f"Company {job.company_id} not found")
+            company_label = company.name
 
             chunks = _retrieve_chunks(db, job.company_id)
             if not chunks:
                 raise ValueError("No ingested filing chunks for this company.")
 
-            # 1. Use centralized deduplication
-
             chunk_pairs, hash_to_children = deduplicate_parent_chunks(chunks)
-
-            # 2. Extract valid IDs directly from the new parent hashes
             valid_ids = set(hash_to_children.keys())
+            source_chunk_ids = [cid for children in hash_to_children.values() for cid in children]
+            citation_order = [cid for cid, _ in chunk_pairs]
 
-            # 3. Draft the memo via LangChain
             draft = generate_memo_draft(company.name, company.ticker, chunk_pairs)
-
             cleaned, invalid_count = strip_invalid_citations(draft, valid_ids)
 
             memo = Memo(
                 company_id=job.company_id,
+                organization_id=job.organization_id,
+                user_id=job.user_id,
                 model_name=settings.ANTHROPIC_MODEL,
                 content=cleaned.model_dump(),
                 citation_map=hash_to_children,
-                source_chunk_ids=list(valid_ids),
+                source_chunk_ids=source_chunk_ids,
+                citation_order=citation_order,
             )
             db.add(memo)
             db.flush()
 
             db.add(
                 AuditLog(
+                    user_id=job.user_id,
                     action="memo_generated",
                     target_type="memo",
                     target_id=memo.id,
@@ -91,11 +96,28 @@ def generate_memo_task(self, job_id: str) -> None:
                     "and were dropped"
                 )
 
+            db.add(
+                Notification(
+                    user_id=job.user_id,
+                    job_id=job.id,
+                    kind="job_succeeded",
+                    memo_id=memo.id,
+                    message=f"Memo ready for {company.name}",
+                )
+            )
             db.commit()
         except Exception as exc:  # noqa: BLE001
             db.rollback()
             job.status = "failed"
             job.error = str(exc)
+            db.add(
+                Notification(
+                    user_id=job.user_id,
+                    job_id=job.id,
+                    kind="job_failed",
+                    message=f"Memo generation failed for {company_label}"[:500],
+                )
+            )
             db.commit()
 
 

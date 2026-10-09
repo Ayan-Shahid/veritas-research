@@ -1,17 +1,10 @@
-"""Runs the eval harness: for each example, generate a memo against
-its fixed chunk set, ground it, score it, and aggregate.
-
-Deliberately bypasses retrieval and the DB — see app/eval/dataset.py
-for why. This isolates the thing Week 5 cares about (generation +
-grounding quality) from retrieval quality, which is a separate
-concern with its own metrics later if needed.
-"""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 
 from app.eval.dataset import EvalExample
 from app.eval.scorers import citation_coverage, faithfulness_score, numeric_hallucination_rate
+from app.schemas.memo import MemoGeneration
 from app.services.grounding import strip_invalid_citations
 from app.services.llm import generate_memo_draft
 
@@ -23,6 +16,7 @@ class ExampleResult:
     numeric_hallucination_rate: float
     faithfulness_score: float
     invalid_citations_stripped: int
+    memo: MemoGeneration
 
 
 @dataclass
@@ -56,6 +50,7 @@ class EvalRunResult:
                     "numeric_hallucination_rate": round(r.numeric_hallucination_rate, 4),
                     "faithfulness_score": round(r.faithfulness_score, 4),
                     "invalid_citations_stripped": r.invalid_citations_stripped,
+                    "memo": r.memo.model_dump(),
                 }
                 for r in self.example_results
             ],
@@ -85,6 +80,7 @@ def run_eval(examples: list[EvalExample], model_name: str) -> EvalRunResult:
                 numeric_hallucination_rate=numeric_hallucination_rate(cleaned, chunk_lookup),
                 faithfulness_score=faithfulness_score(cleaned, chunk_lookup),
                 invalid_citations_stripped=invalid_count,
+                memo=cleaned,
             )
         )
 

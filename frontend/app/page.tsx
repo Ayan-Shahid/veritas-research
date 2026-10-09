@@ -1,77 +1,96 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-import {Button} from "@/components/ui/button";
-import {ArrowRight} from "lucide-react";
-import Aurora from "@/components/background/Aurora";
-import Grainient from "@/components/background/Grainient";
+import { ArrowRight } from "lucide-react";
+import { ClientBackground } from "@/components/background/client-background";
+import { Button } from "@/components/ui/button";
+import { LandingNav } from "@/components/landing/landing-nav";
+import { MemoPreview } from "@/components/landing/memo-preview";
+import { Features, FinalCta, HowItWorks, LandingFooter, Limits, Measured, StackStrip } from "@/components/landing/landing-sections";
+import { HERO } from "@/components/landing/content";
+import { rise } from "@/components/landing/landing-ui";
+import { safeExternalUrl } from "@/lib/safe-url";
 
-export default function HomePage() {
+export const metadata: Metadata = {
+    title: "Veritas Research: equity research memos with citations",
+    description: HERO.body,
+};
+
+export default function Home() {
+    // Optional: set NEXT_PUBLIC_REPO_URL (https only) to show a link to the source on the page.
+    const repoUrl = safeExternalUrl(process.env.NEXT_PUBLIC_REPO_URL);
+
     return (
-        <main
-            className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background px-4">
+        <>
+            <ClientBackground />
+            {/* Reveal-on-scroll hides content until JS runs; without JS, show everything. */}
+            <noscript>
+                <style>{"[data-reveal]{opacity:1!important;transform:none!important}"}</style>
+            </noscript>
 
-            {/* 1. Base Layer: WebGL Grainient */}
-            <div className="absolute inset-0 z-0">
-                <Grainient
-                    color1="#2dd4bf" // Teal (Mapping to chart-2/accent)
-                    color2="#7c3aed" // Indigo (Mapping to deep primary purple)
-                    color3="#020617" // Dark Slate (Mapping to background)
-                    timeSpeed={0.25}
-                    colorBalance={0}
-                    warpStrength={1.5}
-                    warpFrequency={4}
-                    warpSpeed={1.5}
-                    warpAmplitude={40}
-                    blendAngle={0}
-                    blendSoftness={0.1}
-                    rotationAmount={500}
-                    noiseScale={2}
-                    grainAmount={0.08}
-                    grainScale={1.5}
-                    grainAnimated={true}
-                    contrast={1.2}
-                    gamma={1}
-                    saturation={0.8}
-                    centerX={0}
-                    centerY={0}
-                    zoom={0.9}
-                />
-            </div>
+            <LandingNav />
 
-            {/* 2. Middle Layer: Fluid Aurora */}
-            <div className="pointer-events-none absolute inset-0 z-10 opacity-30 mix-blend-screen">
-                <Aurora
-                    colorStops={["#2dd4bf", "#c084fc", "#7c3aed"]}
-                    blend={0.6}
-                    amplitude={0.8}
-                    speed={0.8}
-                />
-            </div>
+            <main>
+                <section className="mx-auto grid max-w-6xl items-center gap-14 px-4 pb-20 pt-16 lg:grid-cols-[1fr_1.05fr] lg:pt-24">
+                    <div className="flex flex-col items-start gap-6">
+                        <span
+                            className="fx-rise inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-foreground/5 px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-widest text-primary backdrop-blur"
+                            style={rise(0)}
+                        >
+                            <span className="relative flex size-1.5" aria-hidden>
+                                <span className="absolute inline-flex size-full rounded-full bg-primary/60 motion-safe:animate-ping" />
+                                <span className="relative inline-flex size-1.5 rounded-full bg-primary" />
+                            </span>
+                            {HERO.eyebrow}
+                        </span>
 
-            {/* 3. Foreground: Glassmorphism UI */}
-            <div
-                className="relative z-20 flex max-w-2xl flex-col items-center gap-6 rounded-2xl border border-border/40 bg-card/30 p-10 text-center shadow-2xl backdrop-blur-xl">
-                <div className="flex flex-col gap-2">
-                    <span className="font-mono text-xs font-bold uppercase tracking-widest text-primary">
-                        Institutional Research Engine
-                    </span>
-                    <h1 className="font-heading text-4xl font-bold tracking-tight text-foreground md:text-5xl">
-                        Equity Insights
-                    </h1>
-                </div>
+                        <h1
+                            className="fx-rise font-heading text-4xl font-bold leading-[1.08] tracking-tight md:text-5xl lg:text-6xl"
+                            style={rise(1)}
+                        >
+                            {HERO.titleLead}{" "}
+                            <span className="bg-gradient-to-r from-primary via-violet-500 to-cyan-400 bg-clip-text text-transparent">
+                                {HERO.titleAccent}
+                            </span>
+                        </h1>
 
-                <p className="max-w-md font-sans text-lg text-muted-foreground leading-relaxed">
-                    AI-powered equity research copilot. Every generated claim is strictly grounded
-                    in vectorized SEC filings to eliminate hallucinations and ensure institutional accuracy.
-                </p>
+                        <p className="fx-rise max-w-xl text-lg leading-relaxed text-muted-foreground" style={rise(2)}>
+                            {HERO.body}
+                        </p>
 
-                {/* Authentication bypassed; routing directly to workspace */}
-                <Button nativeButton={false} render={<Link href="/companies"/>} size="lg"
-                        className="mt-4 shadow-lg group bg-primary hover:bg-primary/90 text-primary-foreground">
+                        <div className="fx-rise flex flex-wrap items-center gap-3" style={rise(3)}>
+                            <Button
+                                size="lg"
+                                nativeButton={false}
+                                render={<Link href={HERO.primary.href} />}
+                                className="group/btn shadow-[0_8px_24px_-8px_var(--primary)]"
+                            >
+                                {HERO.primary.label}
+                                <ArrowRight className="ml-2 size-4 transition-transform group-hover/btn:translate-x-1" />
+                            </Button>
+                            <Button size="lg" variant="outline" nativeButton={false} render={<Link href={HERO.secondary.href} />}>
+                                {HERO.secondary.label}
+                            </Button>
+                        </div>
 
-                    Enter Workspace
-                    <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1"/>
-                </Button>
-            </div>
-        </main>
+                        <p className="fx-rise text-sm text-muted-foreground" style={rise(4)}>
+                            {HERO.note}
+                        </p>
+                    </div>
+
+                    <div className="fx-rise" style={rise(3)}>
+                        <MemoPreview />
+                    </div>
+                </section>
+
+                <HowItWorks />
+                <Features />
+                <Measured repoUrl={repoUrl} />
+                <Limits />
+                <StackStrip />
+                <FinalCta />
+            </main>
+
+            <LandingFooter repoUrl={repoUrl} />
+        </>
     );
 }

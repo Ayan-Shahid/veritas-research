@@ -44,5 +44,28 @@
         "content": "Management has initiated a cost-reduction program targeting $40 million in annualized savings by the end of fiscal 2026, primarily through supply chain consolidation."
       }
     ]
+  },
+  {
+    "name": "keystone_materials_10q_excerpt",
+    "company_name": "Keystone Materials Corp.",
+    "ticker": "KEYM",
+    "chunks": [
+      {
+        "id": "kstn-c1",
+        "content": "Net loss for the quarter ended September 30, 2025 was $18 million, compared to net income of $6 million in the prior-year quarter, driven primarily by a $31 million goodwill impairment charge related to our Specialty Coatings reporting unit."
+      },
+      {
+        "id": "kstn-c2",
+        "content": "We expect continued and potentially escalating tariffs on imported aluminum and steel inputs to persist through at least fiscal 2026, and we do not currently have contractual mechanisms in place to fully offset these increased costs through pricing."
+      },
+      {
+        "id": "kstn-c3",
+        "content": "Our credit agreement contains financial covenants, including a maximum leverage ratio, and continued weak operating performance could result in a covenant breach, which would give our lenders the right to accelerate repayment of our outstanding indebtedness."
+      },
+      {
+        "id": "kstn-c4",
+        "content": "As of September 30, 2025, the Company had $42 million in cash and cash equivalents and $185 million of outstanding borrowings under its revolving credit facility, compared with $310 million of available capacity."
+      }
+    ]
   }
 ]

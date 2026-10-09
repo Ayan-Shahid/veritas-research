@@ -1,15 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCompany } from "@/hooks/use-companies";
 import { useFilings, useFilingActions } from "@/hooks/use-filings";
 import { useMemos, useMemoActions, useJob } from "@/hooks/use-memos";
 import { CompanyDetailView } from "@/components/views/company-detail-view";
+import {toast} from "@/components/ui/toast";
 
 export function CompanyDetailContainer({ companyId }: { companyId: string }) {
-    const router = useRouter();
     const queryClient = useQueryClient();
 
     // Tracks the current background job being polled
@@ -25,24 +24,14 @@ export function CompanyDetailContainer({ companyId }: { companyId: string }) {
     const { generate: generateMemo } = useMemoActions(undefined, companyId);
     const { data: jobStatus } = useJob(activeJobId);
 
-    // 3. Handle Job Completion Side-Effects (Routing & Alerts)
+    // 3. Job completion: refresh data. Toasts come from <NotificationToaster/>,
+    //    which reacts to the backend notification row this invalidation refetches.
     useEffect(() => {
-        if (jobStatus?.status === "succeeded") {
-            queryClient.invalidateQueries({ queryKey: ['memos', companyId] });
-            if (jobStatus.memo_id) {
-                router.push(`/memos/${jobStatus.memo_id}`);
-            }
-        } else if (jobStatus?.status === "failed") {
-            alert(`Generation failed: ${jobStatus.error}`);
+        if (jobStatus?.status === "succeeded" || jobStatus?.status === "failed") {
+            queryClient.invalidateQueries({ queryKey: ["memos", companyId] });
+            queryClient.invalidateQueries({ queryKey: ["notifications"] });
         }
-    }, [
-        jobStatus?.status,
-        jobStatus?.memo_id,
-        jobStatus?.error,
-        companyId,
-        queryClient,
-        router
-    ]);
+    }, [jobStatus?.status, companyId, queryClient]);
 
     // Handle Loading
     if (isLoadingCompany || !company) {
@@ -63,7 +52,17 @@ export function CompanyDetailContainer({ companyId }: { companyId: string }) {
             }}
             onGenerateMemo={() => {
                 generateMemo.mutate(undefined, {
-                    onSuccess: (job) => setActiveJobId(job.id) // This seamlessly overrides any previous failed job ID
+                    onSuccess: (job) => {
+                        setActiveJobId(job.id);
+                        toast.add({
+                            title: "Memo generation started",
+                            description: `${company.ticker}: we'll notify you when it's ready. You can keep browsing.`,
+                            type: "info",
+                            timeout: 5000,
+                        });
+                    },
+                    onError: (err) =>
+                        toast.add({ title: "Couldn't start generation", description: err.message, type: "error" }),
                 });
             }}
             isIngestingId={ingestFiling.isPending ? ingestFiling.variables : null}

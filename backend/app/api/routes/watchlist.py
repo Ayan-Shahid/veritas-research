@@ -5,29 +5,24 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
+from app.core.auth import get_current_user
 from app.models.company import Company
-from app.models.organization import Organization
+from app.models.user import User
 from app.models.watchlist_item import WatchlistItem
 from app.schemas.watchlist import WatchlistCompanyRead, WatchlistItemCreate
 
 router = APIRouter()
 
 
-async def _get_org_or_404(org_id: uuid.UUID, db: AsyncSession) -> Organization:
-    org = await db.get(Organization, org_id)
-    if not org:
-        raise HTTPException(status_code=404, detail="Organization not found")
-    return org
-
-
-@router.get("/organizations/{org_id}/watchlist", response_model=list[WatchlistCompanyRead])
-async def list_watchlist(org_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    await _get_org_or_404(org_id, db)
-
+@router.get("/watchlist", response_model=list[WatchlistCompanyRead])
+async def list_watchlist(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     result = await db.execute(
         select(WatchlistItem, Company)
         .join(Company, Company.id == WatchlistItem.company_id)
-        .where(WatchlistItem.organization_id == org_id)
+        .where(WatchlistItem.organization_id == current_user.organization_id)
         .order_by(Company.ticker)
     )
 
@@ -44,28 +39,28 @@ async def list_watchlist(org_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     ]
 
 
-@router.post(
-    "/organizations/{org_id}/watchlist", response_model=WatchlistCompanyRead, status_code=201
-)
+@router.post("/watchlist", response_model=WatchlistCompanyRead, status_code=201)
 async def add_to_watchlist(
-    org_id: uuid.UUID, payload: WatchlistItemCreate, db: AsyncSession = Depends(get_db)
+    payload: WatchlistItemCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    await _get_org_or_404(org_id, db)
-
     company = await db.get(Company, payload.company_id)
-    if not company:
+    # Ownership check on the company being added, not just its existence -
+    # otherwise a user could watchlist a company_id belonging to another org.
+    if not company or company.organization_id != current_user.organization_id:
         raise HTTPException(status_code=404, detail="Company not found")
 
     existing = await db.execute(
         select(WatchlistItem).where(
-            WatchlistItem.organization_id == org_id,
+            WatchlistItem.organization_id == current_user.organization_id,
             WatchlistItem.company_id == payload.company_id,
         )
     )
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=409, detail="Company already on watchlist")
 
-    item = WatchlistItem(organization_id=org_id, company_id=payload.company_id)
+    item = WatchlistItem(organization_id=current_user.organization_id, company_id=payload.company_id)
     db.add(item)
     await db.commit()
     await db.refresh(item)
@@ -80,13 +75,15 @@ async def add_to_watchlist(
     )
 
 
-@router.delete("/organizations/{org_id}/watchlist/{company_id}", status_code=204)
-async def remove_from_watchlist(org_id: uuid.UUID, company_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    await _get_org_or_404(org_id, db)
-
+@router.delete("/watchlist/{company_id}", status_code=204)
+async def remove_from_watchlist(
+    company_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     result = await db.execute(
         select(WatchlistItem).where(
-            WatchlistItem.organization_id == org_id,
+            WatchlistItem.organization_id == current_user.organization_id,
             WatchlistItem.company_id == company_id,
         )
     )

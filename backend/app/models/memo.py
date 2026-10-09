@@ -15,6 +15,13 @@ class Memo(Base):
     company_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False, index=True
     )
+    # Job additions
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", onupdate="CASCADE"), nullable=True, index=True
+    )
     model_name: Mapped[str] = mapped_column(String(100), nullable=False)
     # "draft" | "approved" | "rejected". A memo starts as "draft" the
     # moment generation succeeds and moves once an analyst reviews it —
@@ -30,6 +37,7 @@ class Memo(Base):
 
     # NEW: Maps LLM parent hashes (e.g., 'sec-a1b2c3d4') to lists of child chunk UUIDs
     citation_map: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    citation_order: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(

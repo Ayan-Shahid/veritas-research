@@ -1,0 +1,43 @@
+{
+	# TLS is terminated at Cloudflare; this listener is only reachable from the tunnel container
+	# (and from the web container, which sends server-side auth calls here).
+	auto_https off
+	admin off
+	servers {
+		# trust X-Forwarded-* from cloudflared (private Docker network addresses)
+		trusted_proxies static private_ranges
+	}
+}
+
+:80 {
+	encode zstd gzip
+
+	header {
+		-Server
+		X-Content-Type-Options nosniff
+	}
+
+	# Supabase Auth (GoTrue): supabase-js talks to <origin>/auth/v1/*; GoTrue serves at its root.
+	handle_path /auth/v1/* {
+		# Admin endpoints need the service-role key and are only ever called from inside this network.
+		@admin path /admin /admin/*
+		respond @admin 404
+		reverse_proxy auth:9999
+	}
+
+	# FastAPI at <origin>/api/*  (prefix stripped)
+	handle_path /api/* {
+		reverse_proxy api:8000
+	}
+
+	# Next.js for everything else
+	handle {
+		reverse_proxy web:3000
+	}
+}
+
+# Internal-only: GoTrue fetches the email templates from here (never routed by the tunnel).
+:8081 {
+	root * /srv/templates
+	file_server
+}

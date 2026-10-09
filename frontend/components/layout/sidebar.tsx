@@ -1,19 +1,44 @@
 "use client";
 
 import Link from "next/link";
-import {Building2, Bookmark, Database, Menu} from "lucide-react";
-import {useUIStore} from "@/store/ui-store";
-import {cn} from "@/lib/utils";
-import {Button} from "@/components/ui/button";
-import {Sheet, SheetContent, SheetTrigger, SheetTitle} from "@/components/ui/sheet";
+import { usePathname } from "next/navigation";
+import { Building2, Bookmark, Database, Menu, Settings } from "lucide-react";
+import { useUIStore } from "@/store/ui-store";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 
-// 1. Reusable Nav Content for both Desktop and Mobile
+const TERMINAL_NAV = [
+    { href: "/companies", label: "Companies", icon: Building2 },
+    { href: "/watchlist", label: "Watchlist", icon: Bookmark },
+    { href: "/organizations", label: "Organizations", icon: Database },
+] as const;
+
+const ACCOUNT_NAV = [{ href: "/settings", label: "Settings", icon: Settings }] as const;
+
+function NavLink({ href, label, icon: Icon }: { href: string; label: string; icon: React.ComponentType<{ className?: string }> }) {
+    const pathname = usePathname();
+    const active = pathname === href || pathname.startsWith(`${href}/`);
+    return (
+        <Link
+            href={href}
+            aria-current={active ? "page" : undefined}
+            className={cn(
+                "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
+                active ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+            )}
+        >
+            <Icon className="w-4 h-4" />
+            <span className="text-sm">{label}</span>
+        </Link>
+    );
+}
+
 const NavContent = () => (
-    <div className="flex flex-col h-full bg-muted/30">
+    <div className="flex flex-col h-full backdrop-saturate-150 backdrop-blur-lg">
         <div className="h-16 px-6 flex items-center bg-muted/50 border-b border-border shrink-0">
             <div className="flex flex-col">
-                <span
-                    className="font-sans text-lg tracking-tight text-foreground uppercase font-bold leading-none">Veritas</span>
+                <span className="font-sans text-lg tracking-tight text-foreground uppercase font-bold leading-none">Veritas</span>
                 <span className="font-mono text-xs text-muted-foreground uppercase tracking-widest">Institutional</span>
             </div>
         </div>
@@ -21,23 +46,19 @@ const NavContent = () => (
         <div className="px-6 pt-6 pb-2">
             <span className="font-sans text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Terminal Navigation</span>
         </div>
-
         <nav className="flex flex-col gap-1 px-3">
-            <Link href="/companies"
-                  className="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 text-primary font-medium transition-colors">
-                <Building2 className="w-4 h-4"/>
-                <span className="text-sm">Companies</span>
-            </Link>
-            <Link href="/watchlist"
-                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
-                <Bookmark className="w-4 h-4"/>
-                <span className="text-sm">Watchlist</span>
-            </Link>
-            <Link href="/organizations"
-                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
-                <Database className="w-4 h-4"/>
-                <span className="text-sm">Organizations</span>
-            </Link>
+            {TERMINAL_NAV.map((item) => (
+                <NavLink key={item.href} {...item} />
+            ))}
+        </nav>
+
+        <div className="px-6 pt-6 pb-2">
+            <span className="font-sans text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Account</span>
+        </div>
+        <nav className="flex flex-col gap-1 px-3">
+            {ACCOUNT_NAV.map((item) => (
+                <NavLink key={item.href} {...item} />
+            ))}
         </nav>
     </div>
 );

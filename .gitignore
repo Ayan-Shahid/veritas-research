@@ -22,3 +22,5 @@ out/
 # IDE
 .vscode/
 .idea/
+
+/backend/data
