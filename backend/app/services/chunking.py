@@ -186,7 +186,12 @@ def chunk_markdown_table(table_text: str, max_chars: int = 1200) -> list[str]:
 
         line_len = len(line) + 1
 
-        if current_len + line_len > max_chars and current_chunk:
+        # A chunk holding only the (re-attached) header, with no data row yet, is useless on
+        # its own — never flush it until at least one real row has been added, even if that
+        # means this one chunk runs over max_chars.
+        header_only = bool(active_header_lines) and current_chunk == active_header_lines
+
+        if current_len + line_len > max_chars and current_chunk and not header_only:
             chunks.append("\n".join(current_chunk))
             current_chunk = []
             current_len = 0
