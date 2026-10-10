@@ -131,7 +131,11 @@ interface AuroraProps {
 export default function Aurora(props: AuroraProps) {
   const { colorStops = ['#5227FF', '#7cff67', '#5227FF'], amplitude = 1.0, blend = 0.5, lightMode = false } = props;
   const propsRef = useRef<AuroraProps>(props);
-  propsRef.current = props;
+  // After every render, not during it: the WebGL animation loop below reads propsRef.current
+  // on each frame instead of closing over stale props.
+  useEffect(() => {
+    propsRef.current = props;
+  });
 
   const ctnDom = useRef<HTMLDivElement>(null);
 
@@ -150,6 +154,7 @@ export default function Aurora(props: AuroraProps) {
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     gl.canvas.style.backgroundColor = 'transparent';
 
+    // eslint-disable-next-line prefer-const -- assigned once below, after the Program exists
     let program: Program | undefined;
 
     function resize() {

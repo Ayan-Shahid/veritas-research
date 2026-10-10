@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { safeRedirectPath, DEFAULT_AFTER_AUTH as D } from "./redirect";
+import { safeRedirectPath, DEFAULT_AFTER_AUTH as D } from "./redirect.ts";
 
 test("allows in-app paths, keeps query", () => {
     assert.equal(safeRedirectPath("/companies"), "/companies");

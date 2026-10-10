@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { shouldBlockCrossSite as b } from "./fetch-metadata";
+import { shouldBlockCrossSite as b } from "./fetch-metadata.ts";
 
 const r = (method: string, site: string | null, mode: string | null, dest: string | null) => ({ method, site, mode, dest });
 

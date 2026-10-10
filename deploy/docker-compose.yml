@@ -9,9 +9,10 @@ x-logging: &logging
   options: { max-size: "10m", max-file: "3" }
 
 x-backend: &backend
-  build:
-    context: ../backend
-  image: veritas-backend:local
+  # Built and pushed by .github/workflows/ci-cd.yml, not built on this machine. GHCR_OWNER
+  # and IMAGE_TAG are set by deploy/deploy.sh (from the workflow, or default to the values
+  # below for a manual run). Override only if you fork the repo under a different account.
+  image: ghcr.io/${GHCR_OWNER:-ayanshahid255}/veritas-backend:${IMAGE_TAG:-latest}
   restart: unless-stopped
   logging: *logging
   environment:
@@ -183,15 +184,11 @@ services:
         condition: service_healthy
 
   web:
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile.prod
-      args:
-        NEXT_PUBLIC_SUPABASE_URL: https://${DOMAIN}
-        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${ANON_KEY}
-        NEXT_PUBLIC_API_URL: https://${DOMAIN}/api
-        NEXT_PUBLIC_SITE_URL: https://${DOMAIN}
-    image: veritas-web:local
+    # Built and pushed by .github/workflows/ci-cd.yml, which bakes NEXT_PUBLIC_* in at build
+    # time from the DOMAIN repo variable and ANON_KEY repo secret (Next.js inlines these at
+    # build, so they can't be supplied here at deploy time the way the rest of .env is). Keep
+    # those two in sync with this file's DOMAIN and ANON_KEY — see deploy/README.md.
+    image: ghcr.io/${GHCR_OWNER:-ayanshahid255}/veritas-web:${IMAGE_TAG:-latest}
     restart: unless-stopped
     logging: *logging
     environment:

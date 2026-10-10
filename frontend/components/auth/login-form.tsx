@@ -48,6 +48,13 @@ export function LoginForm({ next }: { next: string }) {
     });
     useShakeOnError(formRef, state);
 
+    // Only invoked by react-hook-form on a failed client-side validation, never during render
+    // (handleSubmit(onValid, onInvalid) defers both callbacks to submit time) — but the
+    // experimental react-hooks/refs rule can't prove that about a function it didn't define,
+    // so it flags the ref read wherever this is passed to handleSubmit(). See the disable
+    // comment at the call site below.
+    const shakeOnInvalid = () => shakeElement(formRef.current);
+
     useEffect(() => {
         setFocus("email");
     }, [setFocus]);
@@ -64,7 +71,8 @@ export function LoginForm({ next }: { next: string }) {
         <form
             ref={formRef}
             action={formAction}
-            onSubmit={form.handleSubmit(submit, () => shakeElement(formRef.current))}
+            // eslint-disable-next-line react-hooks/refs -- false positive, see shakeOnInvalid above
+            onSubmit={form.handleSubmit(submit, shakeOnInvalid)}
             noValidate
             className="flex flex-col gap-5"
         >
