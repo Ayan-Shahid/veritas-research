@@ -66,12 +66,14 @@ jobs:
         run: |
           grep -v '^sentence-transformers' requirements.txt > /tmp/requirements.ci.txt
           pip install -r /tmp/requirements.ci.txt
-      - name: "Create app role (normally deploy/initdb's job; this service container has no initdb mount)"
+      - name: "Create app role (normally deploy/initdb/01-bootstrap.sh's job; this service
+          container has no initdb mount, so the same three statements run by hand here)"
         env:
           PGPASSWORD: postgres
         run: |
-          psql -h localhost -U postgres -d veritas -c \
-            "CREATE ROLE veritas LOGIN PASSWORD 'veritas'; GRANT ALL ON SCHEMA public TO veritas;"
+          psql -h localhost -U postgres -d veritas -c "CREATE EXTENSION IF NOT EXISTS vector;"
+          psql -h localhost -U postgres -d veritas -c "CREATE ROLE veritas LOGIN PASSWORD 'veritas';"
+          psql -h localhost -U postgres -d veritas -c "ALTER DATABASE veritas OWNER TO veritas;"
       - run: alembic upgrade head
         env:
           DATABASE_URL: postgresql+asyncpg://veritas:veritas@localhost:5432/veritas
