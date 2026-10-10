@@ -86,9 +86,9 @@ export const FEATURES = [
     },
     {
         icon: "building",
-        title: "Workspaces stay separate",
-        // Backed by: organization_id on companies/filings/memos + get_owned_* dependencies returning 404 cross-org.
-        body: "Companies, filings and memos belong to the workspace that created them. Another workspace's IDs simply return not found.",
+        title: "Your research stays yours",
+        // Backed by: user_id on companies/filings/memos + get_owned_* dependencies returning 404 cross-account.
+        body: "Companies, filings and memos belong to the account that created them. Anyone else's IDs simply return not found.",
     },
 ] as const;
 

@@ -11,13 +11,13 @@ from app.core.database import Base
 class Company(Base):
     __tablename__ = "companies"
     __table_args__ = (
-        UniqueConstraint("organization_id", "ticker", name="uq_company_org_ticker"),
-        UniqueConstraint("organization_id", "cik", name="uq_company_org_cik"),
+        UniqueConstraint("user_id", "ticker", name="uq_company_user_ticker"),
+        UniqueConstraint("user_id", "cik", name="uq_company_user_cik"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    organization_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False, index=True
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", onupdate="CASCADE"), nullable=False, index=True
     )
     ticker: Mapped[str] = mapped_column(String(10), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)

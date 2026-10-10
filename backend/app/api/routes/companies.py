@@ -24,7 +24,7 @@ async def list_companies(
 ):
     result = await db.execute(
         select(Company)
-        .where(Company.organization_id == current_user.organization_id)
+        .where(Company.user_id == current_user.id)
         .order_by(Company.ticker)
     )
     return result.scalars().all()
@@ -38,12 +38,11 @@ async def create_company(
 ):
     normalized_ticker = payload.ticker.strip().upper()
 
-    # Scoped to the org now - two different firms researching the same
-    # real-world ticker is expected and fine; only a duplicate within
-    # one org's own workspace should be rejected.
+    # Scoped per user - two users researching the same real-world ticker
+    # is expected and fine; only a duplicate within one account is rejected.
     existing = await db.execute(
         select(Company).where(
-            Company.organization_id == current_user.organization_id,
+            Company.user_id == current_user.id,
             Company.ticker == normalized_ticker,
         )
     )
@@ -52,7 +51,7 @@ async def create_company(
 
     data = payload.model_dump()
     data["ticker"] = normalized_ticker
-    company = Company(organization_id=current_user.organization_id, **data)
+    company = Company(user_id=current_user.id, **data)
     db.add(company)
     await db.commit()
     await db.refresh(company)
@@ -72,7 +71,7 @@ async def preview_memo_prompt(
     # company is already ownership-checked by the dependency - this route
     # previously did its own unscoped db.get(Company, company_id), which
     # meant any authenticated user could preview (and see the estimated
-    # cost/token count of) another org's retrieval for any company_id they
+    # cost/token count of) another user's retrieval for any company_id they
     # guessed. Fixed by routing through get_owned_company like everything else.
     fin_task = asyncio.to_thread(embed_text,
                                  "Financial statements, income statement, balance sheet, net interest income, cash flows")

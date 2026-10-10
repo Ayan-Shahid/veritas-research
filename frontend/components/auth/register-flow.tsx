@@ -45,8 +45,8 @@ const OTP_LENGTH = 6;
 function StepHeader({ icon: Icon, title, subtitle }: { icon: LucideIcon; title: string; subtitle: React.ReactNode }) {
     return (
         <div className="flex flex-col items-center gap-3 text-center">
-            <div className="grid size-12 place-items-center rounded-full bg-primary/10 text-primary ring-1 ring-primary/25">
-                <Icon className="size-6" />
+            <div className="grid size-12 place-items-center rounded-xs border border-border bg-background text-primary">
+                <Icon className="size-5" />
             </div>
             <div className="flex flex-col gap-1.5">
                 <h1 className="font-heading text-2xl font-bold tracking-tight text-foreground">{title}</h1>
@@ -154,10 +154,10 @@ export function RegisterFlow() {
             fallback={
                 <GlassCard className="w-full max-w-md">
                     <div className="flex animate-pulse flex-col items-center gap-4 p-8 py-12" aria-hidden>
-                        <div className="size-12 rounded-full bg-foreground/10" />
-                        <div className="h-6 w-40 rounded-lg bg-foreground/10" />
-                        <div className="h-12 w-full rounded-xl bg-foreground/10" />
-                        <div className="h-12 w-full rounded-xl bg-foreground/10" />
+                        <div className="size-12 rounded-xs bg-foreground/10" />
+                        <div className="h-6 w-40 rounded-xs bg-foreground/10" />
+                        <div className="h-12 w-full rounded-xs bg-foreground/10" />
+                        <div className="h-12 w-full rounded-xs bg-foreground/10" />
                     </div>
                 </GlassCard>
             }
@@ -483,7 +483,7 @@ const PARTICLES = Array.from({ length: 14 }, (_, i) => {
         tx: Math.round(Math.cos(angle) * distance),
         ty: Math.round(Math.sin(angle) * distance),
         delay: 320 + (i % 4) * 45,
-        color: ["bg-primary", "bg-cyan-400", "bg-emerald-400"][i % 3],
+        color: ["bg-primary", "bg-success", "bg-foreground/40"][i % 3],
     };
 });
 
@@ -495,12 +495,11 @@ export function DoneStep({ onContinue }: { onContinue: () => void }) {
                     <span
                         key={i}
                         aria-hidden
-                        className={cn("fx-burst absolute left-1/2 top-1/2 size-1.5 rounded-full", p.color)}
+                        className={cn("fx-burst absolute left-1/2 top-1/2 size-1.5 rounded-xs", p.color)}
                         style={{ ["--tx" as string]: `${p.tx}px`, ["--ty" as string]: `${p.ty}px`, animationDelay: `${p.delay}ms` } as React.CSSProperties}
                     />
                 ))}
-                <span aria-hidden className="absolute inset-0 rounded-full bg-emerald-400/25 blur-xl" />
-                <span className="fx-pop relative grid size-20 place-items-center rounded-full bg-gradient-to-br from-primary to-cyan-500 text-white shadow-[0_12px_32px_-8px_var(--primary)]">
+                <span className="fx-pop btn-mesh relative grid size-20 place-items-center rounded-xs [--btn-c:var(--success)] [--btn-fg:var(--success-foreground)]">
                     <svg viewBox="0 0 24 24" className="size-9" fill="none" stroke="currentColor" strokeWidth={2.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                         <path d="M5 12.5l4.5 4.5L19 7.5" pathLength={1} className="fx-draw" />
                     </svg>
@@ -514,8 +513,8 @@ export function DoneStep({ onContinue }: { onContinue: () => void }) {
                 <GlassButton type="button" onClick={onContinue} showArrow>
                     Continue to Veritas
                 </GlassButton>
-                <div className="h-1 overflow-hidden rounded-full bg-foreground/10" aria-hidden>
-                    <div className="fx-drain h-full rounded-full bg-gradient-to-r from-primary to-cyan-400" />
+                <div className="h-1 overflow-hidden rounded-xs bg-foreground/10" aria-hidden>
+                    <div className="fx-drain h-full bg-primary" />
                 </div>
                 <p className="text-xs text-muted-foreground">Taking you there automatically…</p>
             </div>

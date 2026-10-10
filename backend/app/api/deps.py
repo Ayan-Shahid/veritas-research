@@ -18,10 +18,10 @@ async def get_owned_company(
     current_user: User = Depends(get_current_user),
 ) -> type[Company]:
     company = await db.get(Company, company_id)
-    # Same 404 whether the row doesn't exist or belongs to another org -
+    # Same 404 whether the row doesn't exist or belongs to another user -
     # a 403 here would confirm to an attacker that the id is real, just
     # not theirs, which is a real (if minor) information leak.
-    if not company or company.organization_id != current_user.organization_id:
+    if not company or company.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Company not found")
     return company
 
@@ -32,7 +32,7 @@ async def get_owned_filing(
     current_user: User = Depends(get_current_user),
 ) -> type[Filing]:
     filing = await db.get(Filing, filing_id)
-    if not filing or filing.organization_id != current_user.organization_id:
+    if not filing or filing.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Filing not found")
     return filing
 
@@ -43,7 +43,7 @@ async def get_owned_memo(
     current_user: User = Depends(get_current_user),
 ) -> type[Memo]:
     memo = await db.get(Memo, memo_id)
-    if not memo or memo.organization_id != current_user.organization_id:
+    if not memo or memo.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Memo not found")
     return memo
 
@@ -54,7 +54,7 @@ async def get_owned_job(
     current_user: User = Depends(get_current_user),
 ) -> type[Job]:
     job = await db.get(Job, job_id)
-    if not job or job.organization_id != current_user.organization_id:
+    if not job or job.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Job not found")
     return job
 

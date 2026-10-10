@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { ClientBackground } from "@/components/background/client-background";
 import { Button } from "@/components/ui/button";
 import { LandingNav } from "@/components/landing/landing-nav";
 import { MemoPreview } from "@/components/landing/memo-preview";
@@ -21,7 +20,6 @@ export default function Home() {
 
     return (
         <>
-            <ClientBackground />
             {/* Reveal-on-scroll hides content until JS runs; without JS, show everything. */}
             <noscript>
                 <style>{"[data-reveal]{opacity:1!important;transform:none!important}"}</style>
@@ -33,12 +31,12 @@ export default function Home() {
                 <section className="mx-auto grid max-w-6xl items-center gap-14 px-4 pb-20 pt-16 lg:grid-cols-[1fr_1.05fr] lg:pt-24">
                     <div className="flex flex-col items-start gap-6">
                         <span
-                            className="fx-rise inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-foreground/5 px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-widest text-primary backdrop-blur"
+                            className="fx-rise tag inline-flex items-center gap-2 rounded-xs px-2.5 py-1 font-mono text-[11px] font-semibold uppercase tracking-widest [--tag-c:var(--primary)] [--tag-fg:var(--primary-foreground)]"
                             style={rise(0)}
                         >
                             <span className="relative flex size-1.5" aria-hidden>
-                                <span className="absolute inline-flex size-full rounded-full bg-primary/60 motion-safe:animate-ping" />
-                                <span className="relative inline-flex size-1.5 rounded-full bg-primary" />
+                                <span className="absolute inline-flex size-full rounded-full bg-primary-foreground/60 motion-safe:animate-ping" />
+                                <span className="relative inline-flex size-1.5 rounded-full bg-primary-foreground" />
                             </span>
                             {HERO.eyebrow}
                         </span>
@@ -48,9 +46,7 @@ export default function Home() {
                             style={rise(1)}
                         >
                             {HERO.titleLead}{" "}
-                            <span className="bg-gradient-to-r from-primary via-violet-500 to-cyan-400 bg-clip-text text-transparent">
-                                {HERO.titleAccent}
-                            </span>
+                            <span className="italic text-primary">{HERO.titleAccent}</span>
                         </h1>
 
                         <p className="fx-rise max-w-xl text-lg leading-relaxed text-muted-foreground" style={rise(2)}>
@@ -62,7 +58,7 @@ export default function Home() {
                                 size="lg"
                                 nativeButton={false}
                                 render={<Link href={HERO.primary.href} />}
-                                className="group/btn shadow-[0_8px_24px_-8px_var(--primary)]"
+                                className="group/btn"
                             >
                                 {HERO.primary.label}
                                 <ArrowRight className="ml-2 size-4 transition-transform group-hover/btn:translate-x-1" />

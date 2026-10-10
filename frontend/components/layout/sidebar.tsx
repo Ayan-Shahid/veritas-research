@@ -2,17 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, Bookmark, Database, Menu, Settings } from "lucide-react";
+import { Building2, Menu, Settings } from "lucide-react";
 import { useUIStore } from "@/store/ui-store";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 
-const TERMINAL_NAV = [
-    { href: "/companies", label: "Companies", icon: Building2 },
-    { href: "/watchlist", label: "Watchlist", icon: Bookmark },
-    { href: "/organizations", label: "Organizations", icon: Database },
-] as const;
+const TERMINAL_NAV = [{ href: "/companies", label: "Companies", icon: Building2 }] as const;
 
 const ACCOUNT_NAV = [{ href: "/settings", label: "Settings", icon: Settings }] as const;
 
@@ -24,8 +20,10 @@ function NavLink({ href, label, icon: Icon }: { href: string; label: string; ico
             href={href}
             aria-current={active ? "page" : undefined}
             className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
-                active ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                "flex items-center gap-3 rounded-xs border px-3 py-2 transition-colors",
+                active
+                    ? "border-border bg-background text-foreground font-medium"
+                    : "border-transparent text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
         >
             <Icon className="w-4 h-4" />
@@ -35,11 +33,12 @@ function NavLink({ href, label, icon: Icon }: { href: string; label: string; ico
 }
 
 const NavContent = () => (
-    <div className="flex flex-col h-full backdrop-saturate-150 backdrop-blur-lg">
-        <div className="h-16 px-6 flex items-center bg-muted/50 border-b border-border shrink-0">
+    <div className="flex h-full flex-col bg-background/70 backdrop-blur-md">
+        <div className="h-16 px-6 flex items-center gap-3 border-b border-border shrink-0">
+            <span className="grid size-8 place-items-center rounded-xs border border-primary bg-primary font-heading text-sm font-bold text-primary-foreground">V</span>
             <div className="flex flex-col">
-                <span className="font-sans text-lg tracking-tight text-foreground uppercase font-bold leading-none">Veritas</span>
-                <span className="font-mono text-xs text-muted-foreground uppercase tracking-widest">Institutional</span>
+                <span className="font-sans text-base tracking-tight text-foreground uppercase font-bold leading-none">Veritas</span>
+                <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest">Research</span>
             </div>
         </div>
 
@@ -83,10 +82,11 @@ export function Sidebar() {
                 <Sheet>
                     <SheetTrigger render={<Button
                         size="icon"
-                        className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-2xl bg-primary text-primary-foreground hover:scale-105 transition-transform"
+                        aria-label="Open navigation"
+                        className="fixed bottom-6 right-6 z-50 size-12"
                     />}>
 
-                        <Menu className="w-6 h-6"/>
+                        <Menu className="size-5"/>
                     </SheetTrigger>
                     <SheetContent side="left" className="p-0 w-72 border-r border-border">
                         <SheetTitle className="sr-only">Mobile Navigation</SheetTitle>

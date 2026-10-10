@@ -36,11 +36,7 @@ export function HowItWorks() {
                 {STEPS.map((step, i) => (
                     <li key={step.title}>
                         <Reveal delay={i * 90} className="h-full">
-                            <div className={cn(GLASS, "group relative flex h-full flex-col gap-4 overflow-hidden p-6 transition-all duration-300 hover:-translate-y-1 hover:border-primary/30")}>
-                                <span
-                                    aria-hidden
-                                    className="absolute inset-x-0 top-0 h-px scale-x-0 bg-gradient-to-r from-transparent via-primary to-transparent transition-transform duration-500 group-hover:scale-x-100"
-                                />
+                            <div className={cn(GLASS, "flex h-full flex-col gap-4 p-6 transition-colors duration-200 hover:border-foreground/30")}>
                                 <span className="font-mono text-sm font-bold text-primary">{String(i + 1).padStart(2, "0")}</span>
                                 <h3 className="font-heading text-xl font-semibold tracking-tight">{step.title}</h3>
                                 <p className="text-sm leading-relaxed text-muted-foreground">{step.body}</p>
@@ -64,8 +60,8 @@ export function Features() {
                     const Icon = ICONS[f.icon];
                     return (
                         <Reveal key={f.title} delay={(i % 3) * 80} className="h-full">
-                            <div className={cn(GLASS, "group flex h-full flex-col gap-4 p-6 transition-all duration-300 hover:-translate-y-1 hover:border-primary/30")}>
-                                <span className="grid size-11 place-items-center rounded-xl border border-foreground/10 bg-gradient-to-br from-primary/20 to-cyan-400/10 text-primary transition-shadow duration-300 group-hover:shadow-[0_8px_24px_-8px_var(--primary)]">
+                            <div className={cn(GLASS, "flex h-full flex-col gap-4 p-6 transition-colors duration-200 hover:border-foreground/30")}>
+                                <span className="grid size-10 place-items-center rounded-xs border border-border bg-background text-primary">
                                     <Icon className="size-5" />
                                 </span>
                                 <h3 className="font-heading text-lg font-semibold tracking-tight">{f.title}</h3>
@@ -131,7 +127,7 @@ export function Limits() {
             <div className="mt-10 grid gap-4 md:grid-cols-2">
                 {LIMITS.items.map((item, i) => (
                     <Reveal key={item.title} delay={(i % 2) * 90} className="h-full">
-                        <div className={cn(GLASS, "h-full border-l-2 border-l-amber-500/50 p-6")}>
+                        <div className={cn(GLASS, "h-full border-l-2 border-l-warning p-6")}>
                             <h3 className="font-heading text-lg font-semibold tracking-tight">{item.title}</h3>
                             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.body}</p>
                         </div>
@@ -151,7 +147,7 @@ export function StackStrip() {
                     {STACK.map((name) => (
                         <li
                             key={name}
-                            className="rounded-full border border-foreground/10 bg-foreground/5 px-4 py-1.5 text-sm text-foreground/80 backdrop-blur transition-colors hover:border-primary/30 hover:text-foreground"
+                            className="tag rounded-xs px-3 py-1 text-sm [--tag-c:var(--secondary)] [--tag-fg:var(--secondary-foreground)]"
                         >
                             {name}
                         </li>
@@ -166,16 +162,12 @@ export function FinalCta() {
     return (
         <section className="mx-auto max-w-4xl px-4 py-20">
             <Reveal>
-                <div className={cn(GLASS, "relative overflow-hidden px-8 py-14 text-center")}>
-                    <span
-                        aria-hidden
-                        className="pointer-events-none absolute -top-24 left-1/2 size-72 -translate-x-1/2 rounded-full bg-primary/20 blur-3xl"
-                    />
-                    <div className="relative flex flex-col items-center gap-6">
+                <div className={cn(GLASS, "px-8 py-14 text-center")}>
+                    <div className="flex flex-col items-center gap-6">
                         <h2 className="font-heading text-3xl font-bold tracking-tight md:text-4xl">{FINAL_CTA.title}</h2>
                         <p className="max-w-md text-sm text-muted-foreground">{FINAL_CTA.body}</p>
                         <div className="flex flex-wrap items-center justify-center gap-3">
-                            <Button size="lg" nativeButton={false} render={<Link href="/companies" />} className="group/btn shadow-[0_8px_24px_-8px_var(--primary)]">
+                            <Button size="lg" nativeButton={false} render={<Link href="/companies" />} className="group/btn">
                                 Try it as a guest
                                 <ArrowRight className="ml-2 size-4 transition-transform group-hover/btn:translate-x-1" />
                             </Button>
@@ -193,7 +185,7 @@ export function FinalCta() {
 export function LandingFooter({ repoUrl }: { repoUrl: string | null }) {
     return (
         <footer className="mx-auto max-w-6xl px-4 pb-10 pt-6">
-            <div className="flex flex-col gap-6 border-t border-foreground/10 pt-8 md:flex-row md:items-start md:justify-between">
+            <div className="flex flex-col gap-6 border-t border-border pt-8 md:flex-row md:items-start md:justify-between">
                 <div className="flex max-w-md flex-col gap-3">
                     <Brand />
                     <p className="text-xs leading-relaxed text-muted-foreground">{FOOTER_NOTE}</p>

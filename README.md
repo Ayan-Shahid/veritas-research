@@ -20,7 +20,7 @@ FastAPI + Postgres + Kubernetes.
 This is the foundation phase. Scope for this week:
 
 - FastAPI skeleton with async SQLAlchemy + Alembic migrations
-- Postgres schema v1: `organizations`, `users`, `companies`, `filings`
+- Postgres schema v1: `users`, `companies`, `filings` (each row owned by a user)
 - SEC EDGAR ingestion (ticker → CIK lookup, recent 10-K/10-Q metadata)
 - Next.js shell: landing page, login page (UI only, not wired to auth
   yet), dashboard page reading live company data from the API
@@ -106,7 +106,7 @@ curl -X POST http://localhost:8000/companies \
 curl -X POST http://localhost:8000/companies/{company_id}/filings/sync
 ```
 
-Visit http://localhost:3000/dashboard to see the watchlist populated
+Visit http://localhost:3000/companies to see your companies populated
 from the live API.
 
 ## Tests & linting

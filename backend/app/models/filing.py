@@ -12,12 +12,12 @@ class Filing(Base):
     __tablename__ = "filings"
 
     __table_args__ = (
-        UniqueConstraint("organization_id", "accession_number", name="uq_filing_org_accession"),
+        UniqueConstraint("user_id", "accession_number", name="uq_filing_user_accession"),
     )
 
 
-    organization_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False, index=True
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", onupdate="CASCADE"), nullable=False, index=True
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

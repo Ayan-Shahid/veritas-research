@@ -2,7 +2,7 @@
 
 import {useState} from "react";
 import Link from "next/link";
-import {Search, Building2, FileText, ArrowRight, Star, Loader2, Plus} from "lucide-react";
+import {Search, Building2, FileText, ArrowRight, Loader2, Plus} from "lucide-react";
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
 import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger} from "@/components/ui/dialog";
@@ -32,7 +32,7 @@ export function CompaniesView({
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [formData, setFormData] = useState({ticker: "", name: "", cik: "", sector: ""});
 
-    const glass = "rounded-xl text-card-foreground backdrop-saturate-150 border border-foreground/5 backdrop-blur-xl bg-gradient-to-br from-card/20 to-card/5 dark:from-card/20 dark:to-background/5";
+    const glass = "surface";
 
     const handleAddSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -59,19 +59,19 @@ export function CompaniesView({
                             value={searchQuery}
                             onChange={(e) => onSearchChange(e.target.value)}
                             placeholder="Filter universe..."
-                            className="pl-9 bg-card border-border w-full"
+                            className="pl-9 bg-background/60 w-full"
                         />
                     </div>
 
                     {/* Add Company Modal */}
                     <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-                        <DialogTrigger render={<Button className="bg-primary text-primary-foreground w-full sm:w-auto"/>}>
-                            <Plus className="w-4 h-4 mr-2"/>
+                        <DialogTrigger render={<Button className="w-full sm:w-auto"/>}>
+                            <Plus className="w-4 h-4"/>
                             Add Company
                         </DialogTrigger>
                         <DialogContent className="sm:max-w-[425px]">
                             <DialogHeader>
-                                <DialogTitle>Add New Company</DialogTitle>
+                                <DialogTitle className="font-heading text-lg font-bold">Add New Company</DialogTitle>
                             </DialogHeader>
                             <form onSubmit={handleAddSubmit} className="flex flex-col gap-4 mt-4">
                                 <div className="grid gap-2">
@@ -91,7 +91,7 @@ export function CompaniesView({
                                     <Input id="sector" value={formData.sector} onChange={e => setFormData({...formData, sector: e.target.value})} placeholder="e.g. Technology"/>
                                 </div>
                                 <Button type="submit" disabled={isCreating} className="mt-2">
-                                    {isCreating ? <Loader2 className="w-4 h-4 mr-2 animate-spin"/> : null}
+                                    {isCreating ? <Loader2 className="w-4 h-4 animate-spin"/> : null}
                                     Track Company
                                 </Button>
                             </form>
@@ -105,25 +105,25 @@ export function CompaniesView({
                 <div className={glass}>
                     <div className="p-6 flex items-center justify-between">
                         <div className="flex flex-col">
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Tracked Companies</span>
+                            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Tracked Companies</span>
                             <div className="flex items-baseline gap-2">
                                 <span className="text-3xl font-heading font-bold">{metrics.totalCompanies}</span>
                                 <span className="text-xs text-muted-foreground uppercase font-mono">Equities</span>
                             </div>
                         </div>
-                        <Building2 className="w-8 h-8 text-primary/20"/>
+                        <span className="grid size-10 place-items-center rounded-xs border border-border bg-background text-muted-foreground"><Building2 className="size-5"/></span>
                     </div>
                 </div>
                 <div className={glass}>
                     <div className="p-6 flex items-center justify-between">
                         <div className="flex flex-col">
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Ingested Filings</span>
+                            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Ingested Filings</span>
                             <div className="flex items-baseline gap-2">
                                 <span className="text-3xl font-heading font-bold">{metrics.totalIngested}</span>
                                 <span className="text-xs text-muted-foreground uppercase font-mono">Documents</span>
                             </div>
                         </div>
-                        <FileText className="w-8 h-8 text-primary/20"/>
+                        <span className="grid size-10 place-items-center rounded-xs border border-border bg-background text-muted-foreground"><FileText className="size-5"/></span>
                     </div>
                 </div>
             </div>
@@ -132,9 +132,8 @@ export function CompaniesView({
             <div className={`hidden md:block overflow-hidden ${glass}`}>
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
-                        <thead className="text-[11px] uppercase tracking-wider text-muted-foreground bg-muted/50 border-b border-border font-bold">
+                        <thead className="text-[11px] uppercase tracking-wider text-muted-foreground bg-muted/60 border-b border-border font-semibold">
                         <tr>
-                            <th className="px-6 py-4 w-12 text-center">Watch</th>
                             <th className="px-6 py-4">Ticker</th>
                             <th className="px-6 py-4">Company Name</th>
                             <th className="px-6 py-4">CIK</th>
@@ -146,30 +145,25 @@ export function CompaniesView({
                         <tbody className="divide-y divide-border">
                         {isLoading ? (
                             <tr>
-                                <td colSpan={7} className="px-6 py-8 text-center text-muted-foreground">
+                                <td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">
                                     <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2"/> Loading equities...
                                 </td>
                             </tr>
                         ) : companies.length === 0 ? (
                             <tr>
-                                <td colSpan={7} className="px-6 py-8 text-center text-muted-foreground">No companies found in coverage universe.</td>
+                                <td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">No companies found in coverage universe.</td>
                             </tr>
                         ) : (
                             companies.map((company) => (
                                 <tr key={company.id} className="hover:bg-muted/30 transition-colors group">
-                                    <td className="px-6 py-4 text-center">
-                                        <button className="text-muted-foreground hover:text-primary transition-colors">
-                                            <Star className="w-4 h-4"/>
-                                        </button>
-                                    </td>
-                                    <td className="px-6 py-4 font-mono text-primary font-bold">{company.ticker}</td>
+                                    <td className="px-6 py-4"><span className="tag rounded-xs px-1.5 py-0.5 font-mono text-xs font-semibold [--tag-c:var(--primary)] [--tag-fg:var(--primary-foreground)]">{company.ticker}</span></td>
                                     <td className="px-6 py-4 font-medium text-foreground">{company.name}</td>
                                     <td className="px-6 py-4 font-mono text-xs text-muted-foreground">{company.cik}</td>
                                     <td className="px-6 py-4 text-muted-foreground">{company.sector || "—"}</td>
                                     <td className="px-6 py-4 font-mono font-medium">{company.filings_count || 0}</td>
                                     <td className="px-6 py-4 text-right">
-                                        <Button nativeButton={false} variant="ghost" size="sm" render={<Link href={`/companies/${company.id}`}/>} className="text-primary hover:bg-primary/10 transition-colors">
-                                            View Company <ArrowRight className="w-3 h-3 ml-1"/>
+                                        <Button nativeButton={false} size="sm" render={<Link href={`/companies/${company.id}`}/>} variant="outline">
+                                            View Company <ArrowRight className="w-3 h-3"/>
                                         </Button>
                                     </td>
                                 </tr>
@@ -200,16 +194,11 @@ export function CompaniesView({
                         <div key={company.id} className={glass}>
                             <div className="p-5 flex flex-col gap-4">
                                 <div className="flex items-center justify-between border-b border-border pb-4">
-                                    <div className="flex items-center gap-3">
-                                        <button className="text-muted-foreground hover:text-primary transition-colors shrink-0">
-                                            <Star className="w-4 h-4"/>
-                                        </button>
-                                        <span className="font-mono text-primary font-bold text-lg">{company.ticker}</span>
-                                    </div>
-                                    <div className="bg-muted px-2.5 py-1 rounded-md flex items-center gap-1.5">
-                                        <FileText className="w-3.5 h-3.5 text-muted-foreground" />
-                                        <span className="font-mono text-xs font-medium text-muted-foreground">{company.filings_count || 0}</span>
-                                    </div>
+                                    <span className="tag rounded-xs px-2 py-0.5 font-mono text-sm font-semibold [--tag-c:var(--primary)] [--tag-fg:var(--primary-foreground)]">{company.ticker}</span>
+                                    <span className="tag rounded-xs px-2 py-0.5 flex items-center gap-1.5 [--tag-c:var(--secondary)] [--tag-fg:var(--secondary-foreground)]">
+                                        <FileText className="w-3.5 h-3.5" />
+                                        <span className="font-mono text-xs font-medium">{company.filings_count || 0}</span>
+                                    </span>
                                 </div>
                                 <div className="flex flex-col gap-1.5">
                                     <span className="font-medium text-foreground text-base">{company.name}</span>
@@ -218,8 +207,8 @@ export function CompaniesView({
                                         <span className="font-mono text-xs text-muted-foreground">CIK: {company.cik}</span>
                                     </div>
                                 </div>
-                                <Button nativeButton={false} variant="outline" className="w-full mt-2 text-primary hover:bg-primary/10 transition-colors" render={<Link href={`/companies/${company.id}`}/>}>
-                                    View Company <ArrowRight className="w-4 h-4 ml-2"/>
+                                <Button nativeButton={false} variant="outline" className="w-full mt-2" render={<Link href={`/companies/${company.id}`}/>}>
+                                    View Company <ArrowRight className="w-4 h-4"/>
                                 </Button>
                             </div>
                         </div>

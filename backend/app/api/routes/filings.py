@@ -44,17 +44,17 @@ async def sync_filings(
     created: list[Filing] = []
     for item in filings_data:
         # Scoped: the same real SEC accession_number is fine to exist
-        # once per org, since two different orgs can both ingest AAPL's
-        # latest 10-K independently.
+        # once per user, since two users can both ingest AAPL's latest
+        # 10-K independently.
         existing = await db.execute(
             select(Filing).where(
-                Filing.organization_id == company.organization_id,
+                Filing.user_id == company.user_id,
                 Filing.accession_number == item["accession_number"],
             )
         )
         if existing.scalar_one_or_none():
             continue
-        filing = Filing(company_id=company.id, organization_id=company.organization_id, **item)
+        filing = Filing(company_id=company.id, user_id=company.user_id, **item)
         db.add(filing)
         created.append(filing)
 
@@ -99,7 +99,7 @@ async def ingest_filing(
         db.add(
             FilingChunk(
                 filing_id=filing.id,
-                organization_id=filing.organization_id,
+                user_id=filing.user_id,
                 chunk_index=i,
                 content=content,
                 chunk_metadata=chunk_data["metadata"],
@@ -157,22 +157,19 @@ async def delete_all_ingestions(
         db: AsyncSession = Depends(get_db),
         current_user: User = Depends(get_current_user),
 ):
-    """Deletes all vectorized chunks for the CALLER'S organization only.
+    """Deletes all vectorized chunks belonging to the CALLER only.
 
-    Previously wiped every org's data globally - under real
-    multi-tenancy that's not just "dangerous", it's one user being able
-    to destroy every other firm's ingested filings. Now scoped.
+    Scoped to the current user: an unscoped purge would let any one
+    user destroy every other user's ingested filings.
     """
-    org_filing_ids_subq = (
-        select(Filing.id).where(Filing.organization_id == current_user.organization_id)
-    )
-    await db.execute(delete(FilingChunk).where(FilingChunk.filing_id.in_(org_filing_ids_subq)))
+    user_filing_ids_subq = select(Filing.id).where(Filing.user_id == current_user.id)
+    await db.execute(delete(FilingChunk).where(FilingChunk.filing_id.in_(user_filing_ids_subq)))
     await db.execute(
         update(Filing)
-        .where(Filing.organization_id == current_user.organization_id)
+        .where(Filing.user_id == current_user.id)
         .values(raw_text=None, ingested_at=None)
     )
 
     await db.commit()
 
-    return {"detail": "Successfully purged all filing chunks for your organization."}
+    return {"detail": "Successfully purged all your filing chunks."}

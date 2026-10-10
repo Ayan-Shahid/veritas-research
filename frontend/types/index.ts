@@ -39,24 +39,6 @@ export interface IngestResult {
     total_characters: number; // int[cite: 39]
 }
 
-// --- ORGANIZATION ---
-export interface Organization {
-    id: string; // uuid.UUID[cite: 40]
-    name: string; //[cite: 40]
-    slug: string; //[cite: 40]
-    created_at: string; // datetime[cite: 40]
-}
-
-// --- WATCHLIST ---
-export interface WatchlistCompany {
-    watchlist_item_id: string; // uuid.UUID[cite: 41]
-    company_id: string; // uuid.UUID[cite: 41]
-    ticker: string; //[cite: 41]
-    name: string; //[cite: 41]
-    sector?: string | null; // str | None[cite: 41]
-    added_at: string; // datetime[cite: 41]
-}
-
 // --- MEMO (Previously implemented, provided for completeness) ---
 export interface MemoClaim {
     claim: string;

@@ -27,7 +27,6 @@ from app.services.grounding import strip_invalid_citations
 from app.services.llm import generate_memo_draft
 from app.services.retrieval import build_top_chunks_query
 from app.services.retrieval import deduplicate_parent_chunks
-from app.models.organization import Organization
 
 RETRIEVAL_QUERY = (
     "business overview, revenue growth, profitability, margins, "
@@ -66,7 +65,6 @@ def generate_memo_task(self, job_id: str) -> None:
 
             memo = Memo(
                 company_id=job.company_id,
-                organization_id=job.organization_id,
                 user_id=job.user_id,
                 model_name=settings.ANTHROPIC_MODEL,
                 content=cleaned.model_dump(),

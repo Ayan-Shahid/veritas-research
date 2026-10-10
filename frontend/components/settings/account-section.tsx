@@ -16,11 +16,9 @@ interface AccountSectionProps {
     email: string | null;
     isAnonymous: boolean;
     createdAt: string;
-    workspaceName?: string;
-    isLoadingWorkspace: boolean;
 }
 
-export function AccountSection({ email, isAnonymous, createdAt, workspaceName, isLoadingWorkspace }: AccountSectionProps) {
+export function AccountSection({ email, isAnonymous, createdAt }: AccountSectionProps) {
     const memberSince = new Date(createdAt).toLocaleDateString(undefined, {
         year: "numeric",
         month: "long",
@@ -32,13 +30,12 @@ export function AccountSection({ email, isAnonymous, createdAt, workspaceName, i
             <dl className="grid gap-4 sm:grid-cols-2">
                 <Row label="Email">{email ?? "None (guest)"}</Row>
                 <Row label="Account type">
-                    <Badge variant={isAnonymous ? "outline" : "secondary"}>{isAnonymous ? "Guest" : "Full account"}</Badge>
+                    <Badge variant={isAnonymous ? "warning" : "success"}>{isAnonymous ? "Guest" : "Full account"}</Badge>
                 </Row>
-                <Row label="Workspace">{isLoadingWorkspace ? "Loading…" : (workspaceName ?? "Unavailable")}</Row>
                 <Row label="Member since">{memberSince}</Row>
             </dl>
             {isAnonymous && (
-                <div className="flex flex-col gap-3 rounded-lg border border-border p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-3 rounded-xs border border-border p-4 sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-sm text-muted-foreground">
                         Guest workspaces live in this browser only. Add an email and password to keep your work and use it anywhere.
                     </p>

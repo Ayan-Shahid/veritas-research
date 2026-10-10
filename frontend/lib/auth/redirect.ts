@@ -4,7 +4,7 @@
 export const DEFAULT_AFTER_AUTH = "/companies";
 
 /** Same-origin app areas a login may send the user back to. */
-const ALLOWED_PREFIXES = ["/companies", "/watchlist", "/memos", "/organizations", "/settings"] as const;
+const ALLOWED_PREFIXES = ["/companies", "/memos", "/settings"] as const;
 
 const MAX_LENGTH = 512;
 // Control chars, whitespace and backslash. Browsers strip \t \r \n inside URLs and

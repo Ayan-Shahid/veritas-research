@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Memo, Company, MemoClaim, MemoGeneration } from "@/types";
 import { AuditLog, MemoVersion, useCitation } from "@/hooks/use-memos";
+import { memoStatusVariant } from "@/lib/memo-status";
 
 interface MemoViewProps {
     memo: Memo;
@@ -31,7 +32,7 @@ export function MemoView({ memo, company, versions, auditLog, onUpdate, onApprov
     const [editContent, setEditContent] = useState<MemoGeneration>(memo.content);
     const [prevMemoContent, setPrevMemoContent] = useState<MemoGeneration>(memo.content);
 
-    const glass = "rounded-xl text-card-foreground backdrop-saturate-150 border border-foreground/5 backdrop-blur-xl bg-gradient-to-br from-card/20 to-card/5 dark:from-card/20 dark:to-background/5 shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_1px_rgba(255,255,255,0.6)] dark:shadow-[0_16px_48px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.1)]";
+    const glass = "surface";
 
     const { data: citationData, isLoading: isCitationLoading } = useCitation(memo.id, selectedCitationId || undefined);
 
@@ -61,8 +62,9 @@ export function MemoView({ memo, company, versions, auditLog, onUpdate, onApprov
                 const isSelected = selectedCitationId === citationKey;
                 return (
                     <Badge
-                        key={index} variant="secondary" onClick={() => setSelectedCitationId(citationKey)}
-                        className={`font-mono text-[10px] cursor-pointer transition-colors mx-1 shrink-0 ${isSelected ? 'bg-primary text-primary-foreground ring-2 ring-primary' : 'bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground'}`}
+                        key={index} onClick={() => setSelectedCitationId(citationKey)}
+                        variant={isSelected ? "default" : "secondary"}
+                        className="font-mono text-[10px] cursor-pointer mx-1 shrink-0 align-middle hover:border-primary"
                     >
                         [sec-{citationKey.slice(0,8)}]
                     </Badge>
@@ -80,8 +82,9 @@ export function MemoView({ memo, company, versions, auditLog, onUpdate, onApprov
                         const isSelected = selectedCitationId === chunkId;
                         return (
                             <Badge
-                                key={`fallback-${idx}`} variant="secondary" onClick={() => setSelectedCitationId(chunkId)}
-                                className={`font-mono text-[10px] cursor-pointer transition-colors ml-1.5 shrink-0 ${isSelected ? 'bg-primary text-primary-foreground ring-2 ring-primary' : 'bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground'}`}
+                                key={`fallback-${idx}`} onClick={() => setSelectedCitationId(chunkId)}
+                                variant={isSelected ? "default" : "secondary"}
+                                className="font-mono text-[10px] cursor-pointer ml-1.5 shrink-0 align-middle hover:border-primary"
                             >
                                 [sec-{shortId}]
                             </Badge>
@@ -94,7 +97,7 @@ export function MemoView({ memo, company, versions, auditLog, onUpdate, onApprov
     };
 
     return (
-        <div className="w-full px-4 md:px-6 py-6 md:py-8 flex flex-col bg-background">
+        <div className="w-full px-4 md:px-6 py-6 md:py-8 flex flex-col">
 
             {/* OVERLAYS */}
             {isAuditLogOpen && (
@@ -108,7 +111,7 @@ export function MemoView({ memo, company, versions, auditLog, onUpdate, onApprov
                             <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
                                 {auditLog.length === 0 ? <p className="text-muted-foreground text-sm">No events found.</p> : auditLog.map(log => (
                                     <div key={log.id} className="flex flex-col border-b border-border pb-3">
-                                        <span className="font-mono text-xs text-primary font-bold uppercase">{log.action.replace('_', ' ')}</span>
+                                        <Badge variant="secondary" className="font-mono uppercase">{log.action.replace('_', ' ')}</Badge>
                                         <span className="text-sm text-muted-foreground mt-1">{new Date(log.created_at).toLocaleString()}</span>
                                     </div>
                                 ))}
@@ -128,7 +131,7 @@ export function MemoView({ memo, company, versions, auditLog, onUpdate, onApprov
                             </div>
                             <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
                                 {versions.length === 0 ? <p className="text-muted-foreground text-sm">No previous versions.</p> : versions.map(ver => (
-                                    <div key={ver.id} className="flex flex-col bg-muted/30 p-4 rounded-lg border border-border">
+                                    <div key={ver.id} className="flex flex-col bg-background/50 p-4 rounded-xs border border-border">
                                         <span className="font-mono text-xs text-primary font-bold mb-2">Snapshot: {new Date(ver.created_at).toLocaleString()}</span>
                                         <p className="text-sm text-muted-foreground line-clamp-2">{ver.content.thesis}</p>
                                     </div>
@@ -140,7 +143,7 @@ export function MemoView({ memo, company, versions, auditLog, onUpdate, onApprov
             )}
 
             {/* Sticky Toolbar */}
-            <div className="sticky top-16 z-30 -mx-4 md:-mx-6 -mt-6 md:-mt-8 mb-6 md:mb-8 px-4 md:px-6 py-3 bg-background/95 backdrop-blur-md border-b border-border flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+            <div className="sticky top-16 z-30 -mx-4 md:-mx-6 -mt-6 md:-mt-8 mb-6 md:mb-8 px-4 md:px-6 py-3 bg-background/80 backdrop-blur-md border-b border-border flex flex-col xl:flex-row xl:items-center justify-between gap-4">
 
                 <div className="flex items-center justify-between gap-4 w-full xl:w-auto min-w-0">
                     <div className="flex items-center gap-2 font-mono text-xs md:text-sm text-muted-foreground min-w-0">
@@ -151,33 +154,33 @@ export function MemoView({ memo, company, versions, auditLog, onUpdate, onApprov
                         <span className="truncate min-w-0">{memo.id.split("-")[0]} Thesis</span>
                     </div>
 
-                    <Badge variant="outline" className={`xl:hidden font-bold uppercase shrink-0 ${memo.status === 'approved' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : memo.status === 'rejected' ? 'bg-destructive/10 text-destructive border-destructive/20' : 'bg-muted text-muted-foreground'}`}>
+                    <Badge variant={memoStatusVariant(memo.status)} className="xl:hidden uppercase shrink-0">
                         {memo.status}
                     </Badge>
                 </div>
 
                 {/* Stacked single column on mobile, row on desktop */}
                 <div className="flex flex-col xl:flex-row items-stretch xl:items-center gap-2 w-full xl:w-auto">
-                    <Badge variant="outline" className={`hidden xl:inline-flex mr-2 font-bold uppercase shrink-0 ${memo.status === 'approved' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : memo.status === 'rejected' ? 'bg-destructive/10 text-destructive border-destructive/20' : 'bg-muted text-muted-foreground'}`}>
+                    <Badge variant={memoStatusVariant(memo.status)} className="hidden xl:inline-flex mr-2 uppercase shrink-0">
                         {memo.status}
                     </Badge>
 
                     {isEditing ? (
                         <>
                             <Button variant="outline" size="sm" onClick={() => setIsEditing(false)} className="w-full xl:w-auto justify-center">Cancel</Button>
-                            <Button size="sm" onClick={handleSave} disabled={isUpdating} className="w-full xl:w-auto justify-center bg-primary text-primary-foreground">
-                                {isUpdating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                            <Button size="sm" onClick={handleSave} disabled={isUpdating} className="w-full xl:w-auto justify-center">
+                                {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                                 Save
                             </Button>
                         </>
                     ) : (
-                        <Button variant="outline" size="sm" onClick={() => setIsEditing(true)} disabled={isPending} className="w-full xl:w-auto justify-center"><Edit2 className="w-4 h-4 mr-2" /> Edit</Button>
+                        <Button variant="outline" size="sm" onClick={() => setIsEditing(true)} disabled={isPending} className="w-full xl:w-auto justify-center"><Edit2 className="w-4 h-4" /> Edit</Button>
                     )}
-                    <Button variant="outline" size="sm" onClick={() => setIsHistoryOpen(true)} disabled={isPending} className="w-full xl:w-auto justify-center"><History className="w-4 h-4 mr-2" /> History</Button>
-                    <Button variant="outline" size="sm" onClick={() => setIsAuditLogOpen(true)} disabled={isPending} className="w-full xl:w-auto justify-center"><ClipboardList className="w-4 h-4 mr-2" /> Audit Log</Button>
-                    <Button size="sm" onClick={onApprove} disabled={isPending} className="w-full xl:w-auto justify-center bg-emerald-600 hover:bg-emerald-700 text-white"><CheckCircle className="w-4 h-4 mr-2" /> Approve</Button>
-                    <Button variant="outline" size="sm" onClick={onReject} disabled={isPending} className="w-full xl:w-auto justify-center text-destructive hover:bg-destructive/10 border-destructive/20"><XCircle className="w-4 h-4 mr-2" /> Reject</Button>
-                    <Button variant="ghost" size="sm" onClick={onDelete} disabled={isPending} className="w-full xl:w-auto justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10"><Trash2 className="w-4 h-4 mr-2 xl:mr-0" /> <span className="xl:hidden">Delete</span></Button>
+                    <Button variant="outline" size="sm" onClick={() => setIsHistoryOpen(true)} disabled={isPending} className="w-full xl:w-auto justify-center"><History className="w-4 h-4" /> History</Button>
+                    <Button variant="outline" size="sm" onClick={() => setIsAuditLogOpen(true)} disabled={isPending} className="w-full xl:w-auto justify-center"><ClipboardList className="w-4 h-4" /> Audit Log</Button>
+                    <Button variant="success" size="sm" onClick={onApprove} disabled={isPending} className="w-full xl:w-auto justify-center"><CheckCircle className="w-4 h-4" /> Approve</Button>
+                    <Button variant="outline-destructive" size="sm" onClick={onReject} disabled={isPending} className="w-full xl:w-auto justify-center"><XCircle className="w-4 h-4" /> Reject</Button>
+                    <Button variant="ghost" size="sm" onClick={onDelete} disabled={isPending} aria-label="Delete memo" className="w-full xl:w-auto justify-center text-muted-foreground hover:text-destructive"><Trash2 className="w-4 h-4" /> <span className="xl:hidden">Delete</span></Button>
                 </div>
             </div>
 
@@ -195,11 +198,11 @@ export function MemoView({ memo, company, versions, auditLog, onUpdate, onApprov
                     {/* Thesis */}
                     <section className="mb-10">
                         <h2 className="font-heading text-xl md:text-2xl text-foreground font-bold mb-4 flex items-center justify-between">
-                            Thesis {isEditing && <Badge className="ml-2 bg-primary/20 text-primary">Editing</Badge>}
+                            Thesis {isEditing && <Badge variant="warning" className="ml-2">Editing</Badge>}
                         </h2>
                         {isEditing ? (
                             <textarea
-                                className="w-full min-h-[150px] p-4 bg-muted/50 border border-border rounded-lg text-sm font-sans leading-relaxed focus:ring-1 focus:ring-primary outline-none resize-y"
+                                className="w-full min-h-[150px] p-4 bg-background/60 border border-border rounded-xs text-sm font-sans leading-relaxed focus:border-ring focus:ring-1 focus:ring-ring outline-none resize-y"
                                 value={editContent.thesis}
                                 onChange={(e) => setEditContent({...editContent, thesis: e.target.value})}
                             />
@@ -218,7 +221,7 @@ export function MemoView({ memo, company, versions, auditLog, onUpdate, onApprov
                                 <li key={i} className="break-words">
                                     {isEditing ? (
                                         <textarea
-                                            className="w-full min-h-[80px] mt-2 p-3 bg-muted/50 border border-border rounded-lg text-sm font-sans leading-relaxed focus:ring-1 outline-none resize-y"
+                                            className="w-full min-h-[80px] mt-2 p-3 bg-background/60 border border-border rounded-xs text-sm font-sans leading-relaxed focus:border-ring focus:ring-1 focus:ring-ring outline-none resize-y"
                                             value={item.claim}
                                             onChange={(e) => handleClaimEdit('financial_highlights', i, e.target.value)}
                                         />
@@ -238,7 +241,7 @@ export function MemoView({ memo, company, versions, auditLog, onUpdate, onApprov
                                 <li key={i} className="break-words">
                                     {isEditing ? (
                                         <textarea
-                                            className="w-full min-h-[80px] mt-2 p-3 bg-muted/50 border border-border rounded-lg text-sm font-sans leading-relaxed focus:ring-1 outline-none resize-y"
+                                            className="w-full min-h-[80px] mt-2 p-3 bg-background/60 border border-border rounded-xs text-sm font-sans leading-relaxed focus:border-ring focus:ring-1 focus:ring-ring outline-none resize-y"
                                             value={item.claim}
                                             onChange={(e) => handleClaimEdit('risks', i, e.target.value)}
                                         />
@@ -279,22 +282,22 @@ export function MemoView({ memo, company, versions, auditLog, onUpdate, onApprov
                                 <div className="flex flex-col gap-4">
                                     {/* Stacked single column on mobile, row on desktop */}
                                     <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 w-full">
-                                        <Badge className="font-mono bg-primary text-primary-foreground max-w-full break-all whitespace-normal text-left">
+                                        <Badge className="font-mono max-w-full h-auto break-all whitespace-normal text-left">
                                             [sec-{selectedCitationId}]
                                         </Badge>
-                                        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 font-bold uppercase text-[10px] shrink-0">
+                                        <Badge variant="success" className="uppercase shrink-0">
                                             SEC Verified
                                         </Badge>
                                     </div>
                                     <div className="font-sans text-sm font-semibold text-foreground break-words">{company.name} Filing Record</div>
                                     <div className="font-sans text-xs text-primary font-medium break-words">{citationData.sec_item_label || "Disclosure Section"}</div>
 
-                                    <div className="bg-muted/40 rounded-lg p-3 md:p-4 mt-1">
+                                    <div className="border border-border bg-background/50 rounded-xs p-3 md:p-4 mt-1">
                                         <div className="flex items-center justify-between text-muted-foreground font-sans text-[10px] uppercase font-bold mb-3">
                                             <span>Raw Excerpt</span>
                                             <span className="font-mono shrink-0">SEC ASCII</span>
                                         </div>
-                                        <div className="font-heading text-xs md:text-sm text-foreground leading-relaxed bg-card p-3 md:p-4 rounded border-l-2 border-primary max-h-64 overflow-y-auto break-words whitespace-pre-wrap">
+                                        <div className="font-heading text-xs md:text-sm text-foreground leading-relaxed bg-card p-3 md:p-4 rounded-xs border border-border border-l-2 border-l-primary max-h-64 overflow-y-auto break-words whitespace-pre-wrap">
                                             &#34;{citationData.content}&#34;
                                         </div>
                                     </div>

@@ -117,7 +117,7 @@ export function LoginForm({ next }: { next: string }) {
             </div>
 
             {state.status === "error" && !signedIn && (
-                <p role="alert" className="fx-rise rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-center text-sm font-medium text-destructive">
+                <p role="alert" className="fx-rise rounded-xs border border-destructive bg-destructive px-3 py-2 text-center text-sm font-medium text-destructive-foreground">
                     {state.message}
                 </p>
             )}

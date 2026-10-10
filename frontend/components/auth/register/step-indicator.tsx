@@ -27,13 +27,12 @@ export function ProgressEdge({ total, current }: { total: number; current: numbe
             aria-valuemin={0}
             aria-valuemax={total}
             aria-valuenow={Math.min(current, total)}
-            className="absolute inset-x-0 top-0 h-[3px] overflow-hidden rounded-t-xl bg-foreground/5"
+            className="absolute inset-x-0 top-0 h-[3px] overflow-hidden rounded-t-xs bg-foreground/5"
         >
             <div
-                className="relative h-full origin-left overflow-hidden bg-gradient-to-r from-primary via-violet-500 to-cyan-400 transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
+                className="relative h-full origin-left overflow-hidden bg-primary transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
                 style={{ transform: `scaleX(${fraction})` }}
             >
-                <span className="fx-shimmer absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent" />
             </div>
         </div>
     );
@@ -51,17 +50,12 @@ export function Stepper({ steps, current }: { steps: readonly StepDef[]; current
                     <li key={step.id} aria-current={state === "active" ? "step" : undefined} className={cn("flex items-start", !isLast && "flex-1")}>
                         <div className="flex w-14 flex-col items-center gap-2">
                             <div className="relative grid size-9 place-items-center">
-                                {state === "active" && (
-                                    <span aria-hidden className="absolute inset-0 rounded-full bg-primary/30 motion-safe:animate-ping" />
-                                )}
                                 <span
                                     className={cn(
-                                        "relative grid size-9 place-items-center rounded-full border transition-all duration-500",
-                                        state === "complete" &&
-                                        "border-transparent bg-gradient-to-br from-primary to-cyan-500 text-white shadow-[0_6px_16px_-4px_var(--primary)]",
-                                        state === "active" &&
-                                        "scale-105 border-primary bg-primary/10 text-primary shadow-[0_0_0_4px_color-mix(in_oklch,var(--primary)_15%,transparent)]",
-                                        state === "upcoming" && "border-foreground/15 bg-background/30 text-muted-foreground",
+                                        "relative grid size-9 place-items-center rounded-xs border transition-colors duration-500",
+                                        state === "complete" && "tag [--tag-c:var(--primary)] [--tag-fg:var(--primary-foreground)]",
+                                        state === "active" && "border-primary bg-background text-primary",
+                                        state === "upcoming" && "border-border bg-background/60 text-muted-foreground",
                                     )}
                                 >
                                     {state === "complete" ? <CheckDraw /> : <Icon className="size-4" />}
@@ -78,10 +72,10 @@ export function Stepper({ steps, current }: { steps: readonly StepDef[]; current
                             </span>
                         </div>
                         {!isLast && (
-                            <div aria-hidden className="mx-1 mt-[17px] h-0.5 flex-1 overflow-hidden rounded-full bg-foreground/10">
+                            <div aria-hidden className="mx-1 mt-[17px] h-px flex-1 overflow-hidden bg-border">
                                 <div
                                     className={cn(
-                                        "h-full origin-left rounded-full bg-gradient-to-r from-primary to-cyan-400 transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
+                                        "h-full origin-left bg-primary transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
                                         i < current ? "scale-x-100" : "scale-x-0",
                                     )}
                                 />

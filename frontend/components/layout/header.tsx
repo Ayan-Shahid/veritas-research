@@ -14,16 +14,11 @@ export function Header() {
     const { resolvedTheme, setTheme } = useTheme();
     const unread = useUnreadCount();
 
-    // Modified for a flush top bar (border-b, no rounded corners)
-    const headerGlass = "backdrop-saturate-150 border-b border-foreground/5 backdrop-blur-xl bg-gradient-to-br from-background/40 to-background/10 shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_1px_rgba(255,255,255,0.6)] dark:shadow-[0_16px_48px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.1)]";
-
-    // Standard component glass
-    const inputGlass = "rounded-xl text-card-foreground backdrop-saturate-150 border border-foreground/5 backdrop-blur-xl bg-gradient-to-br from-card/20 to-card/5 dark:from-card/20 dark:to-background/5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.6)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]";
 
     return (
         <header className={cn(
             "fixed top-0 right-0 h-16 z-30 flex items-center justify-between px-4 lg:px-6 transition-all duration-300 ease-in-out",
-            headerGlass,
+            "border-b border-border bg-background/70 backdrop-blur-md",
             isSidebarOpen ? "left-0 lg:left-64" : "left-0"
         )}>
             <div className="flex items-center gap-3 lg:gap-4 flex-1 max-w-2xl">
@@ -35,16 +30,16 @@ export function Header() {
                 <div className="relative w-full flex items-center">
                     <Search className="absolute left-3 w-4 h-4 text-muted-foreground z-10" />
                     <Input
-                        className={cn("w-full pl-9 focus-visible:ring-1 text-sm h-10", inputGlass)}
+                        className="h-9 w-full bg-background/60 pl-9 text-sm"
                         placeholder="Search tickers, filings, or memos..."
                     />
                 </div>
             </div>
             <div className="flex items-center gap-1 lg:gap-2">
-                <Button variant="ghost" size="icon" className="text-muted-foreground relative hover:bg-foreground/5">
+                <Button variant="ghost" size="icon" aria-label="Notifications" className="text-muted-foreground relative">
                     <Bell className="w-5 h-5" />
                     {unread > 0 && (
-                        <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary ring-2 ring-background" />
+                        <span className="absolute top-1.5 right-1.5 min-w-4 h-4 px-1 rounded-xs border border-primary bg-primary text-primary-foreground text-[10px] font-semibold leading-[14px] text-center">{unread > 9 ? "9+" : unread}</span>
                     )}
                 </Button>
 
@@ -52,7 +47,8 @@ export function Header() {
                     variant="ghost"
                     size="icon"
                     onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-                    className="text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors mr-1"
+                    aria-label="Toggle theme"
+                    className="text-muted-foreground mr-1"
                 >
                     <Sun className="w-5 h-5 hidden dark:block" />
                     <Moon className="w-5 h-5 block dark:hidden" />

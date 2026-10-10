@@ -18,9 +18,9 @@ class FilingChunk(Base):
     filing_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("filings.id"), nullable=False, index=True
     )
-    # Job additions
-    organization_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False, index=True
+    # Denormalized owner, so chunk lookups can be scoped without a join.
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", onupdate="CASCADE"), nullable=False, index=True
     )
     
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)

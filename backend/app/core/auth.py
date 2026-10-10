@@ -15,7 +15,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.jwt_verify import AuthIdentity, SupabaseTokenVerifier, TokenError, identity_from_claims
-from app.models.organization import Organization
 from app.models.user import User
 
 _verifier = SupabaseTokenVerifier(supabase_url=settings.SUPABASE_URL, jwt_secret=settings.SUPABASE_JWT_SECRET)
@@ -70,21 +69,15 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(get_db))
 
 
 async def _provision_user(db: AsyncSession, identity: AuthIdentity) -> User:
-    """First request from this auth user: create their personal workspace."""
+    """First request from this auth user: create their local users row."""
     user_id, email = identity.user_id, identity.email
     try:
-        org = Organization(
-            name=email.split("@")[0] if email else "New Workspace",
-            slug=f"ws-{str(user_id)[:8]}",
-        )
-        db.add(org)
-        await db.flush()
-        user = User(id=user_id, organization_id=org.id, email=email, is_anonymous=identity.is_anonymous)
+        user = User(id=user_id, email=email, is_anonymous=identity.is_anonymous)
         db.add(user)
         await db.commit()
     except IntegrityError:
         # A concurrent first-load request won the race and already created
-        # this user (and its org); ours rolled back with it. Use theirs.
+        # this user; ours rolled back. Use theirs.
         await db.rollback()
         existing = await db.get(User, user_id)
         if existing is None:

@@ -30,9 +30,9 @@ export function PreferencesSection() {
                             aria-checked={theme === value}
                             onClick={() => setTheme(value)}
                             className={cn(
-                                "flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors",
+                                "flex items-center justify-center gap-2 rounded-xs border px-3 py-2 text-sm transition-colors",
                                 theme === value
-                                    ? "border-primary bg-primary/10 text-primary"
+                                    ? "border-primary bg-primary text-primary-foreground"
                                     : "border-border text-muted-foreground hover:bg-muted hover:text-foreground",
                             )}
                         >
@@ -57,13 +57,13 @@ export function PreferencesSection() {
                     aria-labelledby="toast-label"
                     onClick={() => setToastNotifications(!toastNotifications)}
                     className={cn(
-                        "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors",
+                        "relative inline-flex h-6 w-11 shrink-0 items-center rounded-xs border transition-colors",
                         toastNotifications ? "border-primary bg-primary" : "border-border bg-muted",
                     )}
                 >
                     <span
                         className={cn(
-                            "inline-block h-4 w-4 rounded-full bg-background shadow transition-transform",
+                            "inline-block h-4 w-4 rounded-xs bg-background transition-transform",
                             toastNotifications ? "translate-x-6" : "translate-x-1",
                         )}
                     />

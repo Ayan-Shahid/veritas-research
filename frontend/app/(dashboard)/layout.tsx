@@ -6,7 +6,6 @@ import { AuthProvider } from "@/components/providers/auth-provider";
 import { NotificationToaster } from "@/components/providers/notification-toaster";
 import { useUIStore } from "@/store/ui-store";
 import { cn } from "@/lib/utils";
-import {ClientBackground} from "@/components/background/client-background.tsx";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const isSidebarOpen = useUIStore((state) => state.isSidebarOpen);
@@ -14,7 +13,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return (
         <AuthProvider>
             <div className="min-h-screen">
-                <ClientBackground />
                 <Header />
                 <Sidebar />
                 <main

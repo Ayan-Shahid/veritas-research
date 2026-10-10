@@ -29,7 +29,6 @@ async def trigger_memo_generation(
     job = Job(
         job_type="memo_generation",
         company_id=company.id,
-        organization_id=company.organization_id,
         user_id=current_user.id,
         status="pending",
     )

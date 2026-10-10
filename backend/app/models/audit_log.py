@@ -13,8 +13,7 @@ class AuditLog(Base):
 
     Deliberately not memo-specific in shape (target_type/target_id
     rather than a memo_id FK) so other entities can write to the same
-    table later without a new model — watchlist changes, filing
-    re-ingests, etc.
+    table later without a new model — filing re-ingests, etc.
     """
 
     __tablename__ = "audit_log"

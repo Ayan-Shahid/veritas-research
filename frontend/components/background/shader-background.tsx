@@ -1,167 +1,205 @@
 "use client";
 
-import React, { useRef, useMemo, useEffect, useState } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import * as THREE from 'three';
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import * as THREE from "three";
 
-const ShaderBackground = ({ isDarkMode }: { isDarkMode: boolean }) => {
-    const meshRef = useRef<THREE.Mesh>(null);
-    const { size } = useThree();
+/*
+ * Tech-grid background: a 1px minor/major grid drawn in CSS-pixel space (crisp at any DPR),
+ * crosshair marks on major intersections, sparse "data" pulses running along major lines,
+ * a few minor cells blinking on and off, and a vignette that keeps the centre calm for content.
+ */
 
-    // Initialize uniforms only once
+const vertexShader = /* glsl */ `
+    varying vec2 vUv;
+    void main() {
+        vUv = uv;
+        gl_Position = vec4(position, 1.0);
+    }
+`;
+
+const fragmentShader = /* glsl */ `
+    precision highp float;
+
+    uniform float u_time;
+    uniform vec2 u_size;    // canvas size in CSS pixels
+    uniform float u_dpr;
+    uniform float u_theme;  // 0 = light, 1 = dark
+
+    const float MINOR = 28.0;           // CSS px between minor lines
+    const float MAJOR = MINOR * 5.0;    // CSS px between major lines
+
+    float hash11(float p) {
+        p = fract(p * 0.1031);
+        p *= p + 33.33;
+        p *= p + p;
+        return fract(p);
+    }
+
+    float hash21(vec2 p) {
+        vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+        p3 += dot(p3, p3.yzx + 33.33);
+        return fract((p3.x + p3.y) * p3.z);
+    }
+
+    // Coverage of a 1-CSS-px line at distance d (CSS px) from its centre, antialiased over one device px.
+    float line(float d) {
+        float halfWidth = 0.5;
+        float aa = 1.0 / u_dpr;
+        return 1.0 - smoothstep(halfWidth - aa * 0.5, halfWidth + aa * 0.5, d);
+    }
+
+    // Distance (CSS px) from p to the nearest grid line of spacing s, per axis.
+    vec2 gridDist(vec2 p, float s) {
+        return abs(mod(p + 0.5 * s, s) - 0.5 * s);
+    }
+
+    // A bright head with a fading tail travelling along +axis. Returns 0..1.
+    float pulse(float along, float lane, float span, float seed) {
+        float laneOn = step(0.62, hash11(lane * 7.13 + seed));
+        float speed = mix(70.0, 160.0, hash11(lane * 3.71 + seed));
+        float period = span + 600.0;
+        float head = mod(u_time * speed + hash11(lane * 1.93 + seed) * period, period) - 300.0;
+        float behind = head - along;                 // > 0 means this pixel is behind the head
+        float tail = exp(-max(behind, 0.0) / 90.0) * step(0.0, behind);
+        return tail * laneOn;
+    }
+
+    void main() {
+        // CSS-pixel coordinates, origin top-left (so the grid stays anchored to the top of the page).
+        vec2 p = vec2(gl_FragCoord.x, u_size.y * u_dpr - gl_FragCoord.y) / u_dpr;
+
+        vec3 bg      = mix(vec3(0.972, 0.974, 0.980), vec3(0.047, 0.051, 0.063), u_theme);
+        vec3 minorC  = mix(vec3(0.905, 0.910, 0.925), vec3(0.090, 0.098, 0.118), u_theme);
+        vec3 majorC  = mix(vec3(0.835, 0.842, 0.865), vec3(0.135, 0.145, 0.175), u_theme);
+        vec3 markC   = mix(vec3(0.640, 0.650, 0.690), vec3(0.300, 0.320, 0.380), u_theme);
+        vec3 signalC = mix(vec3(0.255, 0.330, 0.880), vec3(0.380, 0.520, 1.000), u_theme);
+
+        vec2 dMinor = gridDist(p, MINOR);
+        vec2 dMajor = gridDist(p, MAJOR);
+
+        float minorLine = max(line(dMinor.x), line(dMinor.y));
+        float majorLine = max(line(dMajor.x), line(dMajor.y));
+
+        // Crosshair "+" (9 px arms) on every major intersection.
+        float arm = 4.5;
+        float mark = max(
+            line(dMajor.x) * step(dMajor.y, arm),
+            line(dMajor.y) * step(dMajor.x, arm)
+        );
+
+        // Vignette: fade the grid towards the edges, keep it strongest near the top-centre.
+        vec2 uv = p / u_size;
+        float vignette = 1.0 - smoothstep(0.35, 1.05, length((uv - vec2(0.5, 0.25)) * vec2(1.1, 1.0)));
+        float gridAlpha = mix(0.45, 1.0, vignette);
+
+        vec3 color = bg;
+
+        // Blinking minor cells: a handful light up for a few seconds at a time.
+        vec2 cell = floor(p / MINOR);
+        float epoch = floor(u_time * 0.35 + hash21(cell) * 8.0);
+        float lit = step(0.992, hash21(cell + epoch * 17.0));
+        vec2 inCell = mod(p, MINOR);
+        float inset = step(3.0, inCell.x) * step(3.0, inCell.y) * step(inCell.x, MINOR - 3.0) * step(inCell.y, MINOR - 3.0);
+        color = mix(color, signalC, lit * inset * mix(0.06, 0.10, u_theme) * vignette);
+
+        color = mix(color, minorC, minorLine * gridAlpha);
+        color = mix(color, majorC, majorLine * gridAlpha);
+        color = mix(color, markC, mark * gridAlpha);
+
+        // Data pulses along major lines (horizontal lanes run right, vertical lanes run down).
+        float laneY = floor((p.y + 0.5 * MAJOR) / MAJOR);
+        float laneX = floor((p.x + 0.5 * MAJOR) / MAJOR);
+        float h = pulse(p.x, laneY, u_size.x, 0.0) * line(dMajor.y);
+        float v = pulse(p.y, laneX, u_size.y, 11.0) * line(dMajor.x);
+        float signal = clamp(h + v, 0.0, 1.0);
+        color = mix(color, signalC, signal * mix(0.75, 0.9, u_theme));
+
+        gl_FragColor = vec4(color, 1.0);
+    }
+`;
+
+function GridPlane({ isDark, animate }: { isDark: boolean; animate: boolean }) {
+    const materialRef = useRef<THREE.ShaderMaterial>(null);
+    const { size, viewport } = useThree();
+
     const uniforms = useMemo(
         () => ({
             u_time: { value: 0 },
-            u_resolution: { value: new THREE.Vector2(size.width, size.height) },
-            u_theme: { value: isDarkMode ? 1.0 : 0.0 },
+            u_size: { value: new THREE.Vector2(1, 1) },
+            u_dpr: { value: 1 },
+            u_theme: { value: isDark ? 1 : 0 },
         }),
-        []
+        // Created once; the theme is eased towards its target in useFrame.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [],
     );
 
-    // Handle window resizing
     useEffect(() => {
-        if (meshRef.current) {
-            const material = meshRef.current.material as THREE.ShaderMaterial;
-            material.uniforms.u_resolution.value.set(size.width, size.height);
-        }
-    }, [size]);
+        const material = materialRef.current;
+        if (!material) return;
+        material.uniforms.u_size.value.set(size.width, size.height);
+        material.uniforms.u_dpr.value = viewport.dpr;
+    }, [size, viewport.dpr]);
 
-    // By capturing isDarkMode directly in the render scope,
-    // R3F automatically updates the useFrame callback. No refs needed!
-    const targetTheme = isDarkMode ? 1.0 : 0.0;
+    const targetTheme = isDark ? 1 : 0;
 
-    useFrame((state) => {
-        if (meshRef.current) {
-            const material = meshRef.current.material as THREE.ShaderMaterial;
-            material.uniforms.u_time.value = state.clock.elapsedTime * 0.2;
-
-            // Interpolate towards the target theme instantly
-            material.uniforms.u_theme.value = THREE.MathUtils.lerp(
-                material.uniforms.u_theme.value,
-                targetTheme,
-                0.05
-            );
-        }
+    useFrame((state, delta) => {
+        const material = materialRef.current;
+        if (!material) return;
+        if (animate) material.uniforms.u_time.value += Math.min(delta, 0.1);
+        material.uniforms.u_theme.value = THREE.MathUtils.lerp(material.uniforms.u_theme.value, targetTheme, 0.12);
     });
 
     return (
-        <mesh ref={meshRef}>
+        <mesh>
             <planeGeometry args={[2, 2]} />
             <shaderMaterial
-                vertexShader={`
-          varying vec2 vUv;
-          void main() {
-            vUv = uv;
-            gl_Position = vec4(position, 1.0);
-          }
-        `}
-                fragmentShader={`
-          uniform float u_time;
-          uniform vec2 u_resolution;
-          uniform float u_theme; 
-          
-          varying vec2 vUv;
-
-          vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-          vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-          vec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }
-
-          float snoise(vec2 v) {
-            const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
-            vec2 i  = floor(v + dot(v, C.yy) );
-            vec2 x0 = v -   i + dot(i, C.xx);
-            vec2 i1;
-            i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
-            vec4 x12 = x0.xyxy + C.xxzz;
-            x12.xy -= i1;
-            vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 ));
-            vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
-            m = m*m ;
-            m = m*m ;
-            vec3 x = 2.0 * fract(p * C.www) - 1.0;
-            vec3 h = abs(x) - 0.5;
-            vec3 ox = floor(x + 0.5);
-            vec3 a0 = x - ox;
-            m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
-            vec3 g;
-            g.x  = a0.x  * x0.x  + h.x  * x0.y;
-            g.yz = a0.yz * x12.xz + h.yz * x12.yw;
-            return 130.0 * dot(m, g);
-          }
-
-          void main() {
-            vec2 uv = gl_FragCoord.xy / u_resolution.xy;
-            uv.x *= u_resolution.x / u_resolution.y;
-
-            vec3 lightBg = vec3(1.0, 1.0, 1.0);              
-            vec3 lightPrimary = vec3(0.44, 0.25, 0.88);      
-            vec3 lightAccent = vec3(0.18, 0.85, 0.88);       
-            vec3 lightGrid = vec3(0.95, 0.95, 0.96);         
-
-            vec3 darkBg = vec3(0.11, 0.12, 0.14);            
-            vec3 darkPrimary = vec3(0.35, 0.18, 0.78);       
-            vec3 darkAccent = vec3(0.18, 0.85, 0.88);        
-            vec3 darkGrid = vec3(0.16, 0.17, 0.19);          
-
-            vec3 bg = mix(lightBg, darkBg, u_theme);
-            vec3 primary = mix(lightPrimary, darkPrimary, u_theme);
-            vec3 accent = mix(lightAccent, darkAccent, u_theme);
-            vec3 gridColor = mix(lightGrid, darkGrid, u_theme);
-
-            vec2 pos = uv * 2.0;
-            float noise1 = snoise(pos + u_time * 0.3);
-            float noise2 = snoise(pos * 2.0 - u_time * 0.4);
-            
-            float combinedNoise = (noise1 + noise2 * 0.5) * 0.5 + 0.5;
-            float lines = fract(combinedNoise * 12.0);
-            float edge = smoothstep(0.0, 0.1, lines) - smoothstep(0.1, 0.2, lines);
-
-            float washPrimary = smoothstep(0.3, 0.8, noise1) * 0.15; 
-            float washAccent = smoothstep(0.4, 0.9, noise2) * 0.12;
-
-            vec3 finalColor = bg;
-            finalColor = mix(finalColor, primary, washPrimary);
-            finalColor = mix(finalColor, accent, washAccent);
-            finalColor = mix(finalColor, gridColor, edge * 0.4); 
-
-            gl_FragColor = vec4(finalColor, 1.0);
-          }
-        `}
+                ref={materialRef}
+                vertexShader={vertexShader}
+                fragmentShader={fragmentShader}
                 uniforms={uniforms}
                 depthWrite={false}
                 depthTest={false}
             />
         </mesh>
     );
-};
+}
 
-export function VeritasBackground() {
-    // Initialize state directly from the DOM to satisfy ESLint's no-sync-setState rule
-    const [isDarkMode, setIsDarkMode] = useState(() => {
-        if (typeof document !== 'undefined') {
-            return document.documentElement.classList.contains('dark');
-        }
-        return true; // Fallback default
-    });
-
+function useIsDark() {
+    const [isDark, setIsDark] = useState(() =>
+        typeof document === "undefined" ? true : document.documentElement.classList.contains("dark"),
+    );
     useEffect(() => {
-        // Subscribe to external DOM mutations from next-themes
-        const observer = new MutationObserver(() => {
-            setIsDarkMode(document.documentElement.classList.contains('dark'));
-        });
-
-        observer.observe(document.documentElement, {
-            attributes: true,
-            attributeFilter: ['class']
-        });
-
+        const root = document.documentElement;
+        const observer = new MutationObserver(() => setIsDark(root.classList.contains("dark")));
+        observer.observe(root, { attributes: true, attributeFilter: ["class"] });
         return () => observer.disconnect();
     }, []);
+    return isDark;
+}
+
+function usePrefersReducedMotion() {
+    const [reduced, setReduced] = useState(
+        () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    );
+    useEffect(() => {
+        const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+        const onChange = () => setReduced(mq.matches);
+        mq.addEventListener("change", onChange);
+        return () => mq.removeEventListener("change", onChange);
+    }, []);
+    return reduced;
+}
+
+export function VeritasBackground() {
+    const isDark = useIsDark();
+    const reducedMotion = usePrefersReducedMotion();
 
     return (
-        <div className="fixed inset-0 -z-10 h-screen w-screen">
-            <Canvas camera={{ position: [0, 0, 1] }}>
-                <ShaderBackground isDarkMode={isDarkMode} />
+        <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 h-screen w-screen bg-background">
+            <Canvas dpr={[1, 2]} gl={{ antialias: false, alpha: false }} camera={{ position: [0, 0, 1] }}>
+                <GridPlane isDark={isDark} animate={!reducedMotion} />
             </Canvas>
         </div>
     );

@@ -18,9 +18,7 @@ from app.models import (  # noqa: F401 - register models
     job,
     memo,
     memo_version,
-    organization,
     user,
-    watchlist_item,
     notification
 )
 

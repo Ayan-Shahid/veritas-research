@@ -5,7 +5,7 @@ import { safeRedirectPath, DEFAULT_AFTER_AUTH as D } from "./redirect.ts";
 test("allows in-app paths, keeps query", () => {
     assert.equal(safeRedirectPath("/companies"), "/companies");
     assert.equal(safeRedirectPath("/memos/abc-123"), "/memos/abc-123");
-    assert.equal(safeRedirectPath("/watchlist?tab=a"), "/watchlist?tab=a");
+    assert.equal(safeRedirectPath("/companies?tab=a"), "/companies?tab=a");
 });
 test("rejects absolute / protocol-relative / scheme tricks", () => {
     for (const bad of [

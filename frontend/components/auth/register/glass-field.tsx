@@ -59,13 +59,13 @@ export function GlassField({
             </label>
             <div
                 className={cn(
-                    "relative rounded-xl border bg-background/40 backdrop-blur-sm transition-all duration-300 dark:bg-background/20",
+                    "relative rounded-xs border bg-background/60 transition-colors duration-200",
                     error
-                        ? "border-destructive/60 ring-3 ring-destructive/15"
-                        : "border-foreground/10 focus-within:border-primary/60 focus-within:shadow-[0_0_24px_-6px_var(--primary)] focus-within:ring-3 focus-within:ring-primary/20",
+                        ? "border-destructive ring-1 ring-destructive"
+                        : "border-input focus-within:border-ring focus-within:ring-1 focus-within:ring-ring",
                 )}
             >
-                <Icon className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground transition-all duration-300 group-focus-within/field:scale-110 group-focus-within/field:text-primary" />
+                <Icon className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground transition-colors duration-200 group-focus-within/field:text-primary" />
                 <input
                     id={id}
                     type={inputType}
@@ -76,12 +76,12 @@ export function GlassField({
                     aria-describedby={describedBy}
                     onKeyDown={onKeyEvent}
                     onKeyUp={onKeyEvent}
-                    className="h-12 w-full rounded-xl bg-transparent pl-10 pr-11 text-sm outline-none placeholder:text-muted-foreground/50 disabled:cursor-not-allowed"
+                    className="h-11 w-full rounded-xs bg-transparent pl-10 pr-11 text-sm outline-none placeholder:text-muted-foreground/50 disabled:cursor-not-allowed"
                     {...registration}
                 />
                 {showValid && (
                     <span className="absolute right-3 top-1/2 -translate-y-1/2" aria-hidden>
-                        <span className="fx-pop grid size-5 place-items-center rounded-full bg-emerald-500/15 text-emerald-500">
+                        <span className="fx-pop tag grid size-5 place-items-center rounded-xs [--tag-c:var(--success)] [--tag-fg:var(--success-foreground)]">
                             <Check className="size-3" strokeWidth={3} />
                         </span>
                     </span>
@@ -93,7 +93,7 @@ export function GlassField({
                         disabled={disabled}
                         aria-label={revealed ? "Hide password" : "Show password"}
                         aria-pressed={!!revealed}
-                        className="absolute right-1.5 top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-lg text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                        className="absolute right-1.5 top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
                     >
                         <Eye
                             className={cn(

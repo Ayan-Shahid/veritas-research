@@ -16,7 +16,7 @@ function Lines({ widths, tone }: { widths: readonly number[]; tone: "active" | "
                     key={i}
                     style={{ width: `${w}%` }}
                     className={cn(
-                        "h-2.5 rounded-full transition-colors duration-500",
+                        "h-2 rounded-xs transition-colors duration-500",
                         tone === "active" ? "bg-primary/25" : "bg-foreground/10",
                     )}
                 />
@@ -47,13 +47,11 @@ export function MemoPreview() {
                 onBlur={() => setPaused(false)}
             >
                 {/* window chrome */}
-                <div className="flex items-center justify-between border-b border-foreground/5 px-4 py-3">
-                    <div className="flex gap-1.5" aria-hidden>
-                        <span className="size-2.5 rounded-full bg-foreground/15" />
-                        <span className="size-2.5 rounded-full bg-foreground/15" />
-                        <span className="size-2.5 rounded-full bg-foreground/15" />
-                    </div>
-                    <span className="rounded-full border border-foreground/10 bg-foreground/5 px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                <div className="flex items-center justify-between border-b border-border px-4 py-3">
+                    <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground" aria-hidden>
+                        memo.draft
+                    </span>
+                    <span className="tag rounded-xs px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-widest [--tag-c:var(--warning)] [--tag-fg:var(--warning-foreground)]">
                         Draft
                     </span>
                 </div>
@@ -81,10 +79,10 @@ export function MemoPreview() {
                                         aria-pressed={isActive}
                                         aria-label={`Show the source excerpt for ${claim.section}`}
                                         className={cn(
-                                            "w-fit rounded-md border px-2 py-0.5 font-mono text-[11px] font-semibold transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                                            "tag w-fit rounded-xs px-2 py-0.5 font-mono text-[11px] font-semibold transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
                                             isActive
-                                                ? "scale-105 border-primary/50 bg-primary/15 text-primary shadow-[0_6px_16px_-8px_var(--primary)]"
-                                                : "border-foreground/10 bg-foreground/5 text-muted-foreground hover:border-primary/30 hover:text-foreground",
+                                                ? "[--tag-c:var(--primary)] [--tag-fg:var(--primary-foreground)]"
+                                                : "[--tag-c:var(--secondary)] [--tag-fg:var(--secondary-foreground)]",
                                         )}
                                     >
                                         [{claim.chip}]
@@ -95,25 +93,25 @@ export function MemoPreview() {
                     </div>
 
                     {/* source pane */}
-                    <div className="flex flex-col gap-4 border-t border-foreground/5 bg-foreground/[0.02] p-5 sm:border-l sm:border-t-0">
+                    <div className="flex flex-col gap-4 border-t border-border bg-foreground/[0.02] p-5 sm:border-l sm:border-t-0">
                         <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                             Source excerpt
                         </span>
                         <div key={active} className="fx-rise flex flex-col gap-4" aria-live="polite">
                             <div className="flex flex-wrap items-center gap-2">
-                                <span className="rounded-md bg-primary/10 px-2 py-0.5 font-mono text-[11px] font-semibold text-primary">
+                                <span className="tag rounded-xs px-2 py-0.5 font-mono text-[11px] font-semibold [--tag-c:var(--primary)] [--tag-fg:var(--primary-foreground)]">
                                     10-K
                                 </span>
-                                <span className="rounded-md border border-foreground/10 px-2 py-0.5 font-mono text-[11px] text-muted-foreground">
+                                <span className="tag rounded-xs px-2 py-0.5 font-mono text-[11px] [--tag-c:var(--secondary)] [--tag-fg:var(--secondary-foreground)]">
                                     {current.item}
                                 </span>
                             </div>
                             <div className="flex flex-col gap-2" aria-hidden>
-                                <div className="h-2.5 w-full rounded-full bg-foreground/10" />
-                                <div className="h-2.5 w-[92%] rounded-full bg-primary/25" />
-                                <div className="h-2.5 w-[84%] rounded-full bg-primary/25" />
-                                <div className="h-2.5 w-full rounded-full bg-foreground/10" />
-                                <div className="h-2.5 w-[70%] rounded-full bg-foreground/10" />
+                                <div className="h-2 w-full rounded-xs bg-foreground/10" />
+                                <div className="h-2 w-[92%] rounded-xs bg-primary/25" />
+                                <div className="h-2 w-[84%] rounded-xs bg-primary/25" />
+                                <div className="h-2 w-full rounded-xs bg-foreground/10" />
+                                <div className="h-2 w-[70%] rounded-xs bg-foreground/10" />
                             </div>
                             <span className="w-fit font-mono text-[11px] font-semibold text-primary">View on EDGAR ↗</span>
                         </div>

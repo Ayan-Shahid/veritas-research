@@ -66,15 +66,15 @@ export function OtpInput({
                         <div
                             key={i}
                             className={cn(
-                                "grid h-12 min-w-0 flex-1 place-items-center rounded-xl border bg-background/40 text-lg font-semibold backdrop-blur-sm transition-all duration-200 dark:bg-background/20",
+                                "grid h-12 min-w-0 flex-1 place-items-center rounded-xs border bg-background/60 font-mono text-lg font-semibold transition-colors duration-200",
                                 length % 2 === 0 && i === length / 2 && "ml-2",
                                 invalid
-                                    ? "border-destructive/60"
+                                    ? "border-destructive ring-1 ring-destructive"
                                     : isActive
-                                        ? "-translate-y-0.5 border-primary shadow-[0_8px_20px_-8px_var(--primary)] ring-3 ring-primary/25"
+                                        ? "border-ring ring-1 ring-ring"
                                         : char
-                                            ? "border-primary/40 bg-primary/10"
-                                            : "border-foreground/10",
+                                            ? "border-foreground/40"
+                                            : "border-input",
                             )}
                         >
                             {char ? (

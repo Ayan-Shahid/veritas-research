@@ -21,6 +21,6 @@ async def get_chunk(
     """Deprecated - superseded by GET /memos/{memo_id}/citations/{citation_id}.
     Kept only for any in-flight frontend calls during the transition."""
     chunk = await db.get(FilingChunk, chunk_id)
-    if not chunk or chunk.organization_id != current_user.organization_id:
+    if not chunk or chunk.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Chunk not found")
     return chunk
