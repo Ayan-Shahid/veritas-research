@@ -12,7 +12,7 @@ x-backend: &backend
   # Built and pushed by .github/workflows/ci-cd.yml, not built on this machine. GHCR_OWNER
   # and IMAGE_TAG are set by deploy/deploy.sh (from the workflow, or default to the values
   # below for a manual run). Override only if you fork the repo under a different account.
-  image: ghcr.io/${GHCR_OWNER:-ayanshahid255}/veritas-backend:${IMAGE_TAG:-latest}
+  image: ghcr.io/${GHCR_OWNER:-ayan-shahid}/veritas-backend:${IMAGE_TAG:-latest}
   restart: unless-stopped
   logging: *logging
   environment:
@@ -188,7 +188,7 @@ services:
     # time from the DOMAIN repo variable and ANON_KEY repo secret (Next.js inlines these at
     # build, so they can't be supplied here at deploy time the way the rest of .env is). Keep
     # those two in sync with this file's DOMAIN and ANON_KEY — see deploy/README.md.
-    image: ghcr.io/${GHCR_OWNER:-ayanshahid255}/veritas-web:${IMAGE_TAG:-latest}
+    image: ghcr.io/${GHCR_OWNER:-ayan-shahid}/veritas-web:${IMAGE_TAG:-latest}
     restart: unless-stopped
     logging: *logging
     environment:

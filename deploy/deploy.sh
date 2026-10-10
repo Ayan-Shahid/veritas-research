@@ -10,7 +10,11 @@ set -euo pipefail
 
 ENV_FILE="${VERITAS_ENV_FILE:-$HOME/veritas-deploy-env/.env}"
 export IMAGE_TAG="${IMAGE_TAG:-latest}"
-export GHCR_OWNER="${GHCR_OWNER:-ayanshahid255}"
+# GHCR (and Docker generally) requires an all-lowercase repository name. The workflow passes
+# GHCR_OWNER straight from github.repository_owner, which preserves the account's exact-case
+# login (e.g. "Ayan-Shahid") — lowercase it here so it matches the image names build-and-push
+# actually pushed (it lowercases independently before building/pushing).
+export GHCR_OWNER="$(echo "${GHCR_OWNER:-ayan-shahid}" | tr '[:upper:]' '[:lower:]')"
 
 if [ ! -f "$ENV_FILE" ]; then
     echo "error: $ENV_FILE not found. Move your generated .env there first (see the comment above)." >&2
