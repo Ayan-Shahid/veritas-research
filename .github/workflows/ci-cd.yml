@@ -146,11 +146,26 @@ jobs:
       packages: read
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: "Log in to GHCR (writes ~/.docker/config.json directly instead of running
+          `docker login`: this runner's docker CLI defaults to the macOS Keychain helper for
+          credential storage, which fails non-interactively with a background service — error
+          -25308, \"User interaction is not allowed.\" A plain auths entry for ghcr.io is read
+          directly and never goes through that helper.)"
+        env:
+          REGISTRY_USER: ${{ github.actor }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 - <<'PY'
+          import base64, json, os, pathlib
+          cfg_path = pathlib.Path.home() / ".docker" / "config.json"
+          cfg_path.parent.mkdir(parents=True, exist_ok=True)
+          cfg = json.loads(cfg_path.read_text()) if cfg_path.exists() else {}
+          auth = base64.b64encode(
+              f"{os.environ['REGISTRY_USER']}:{os.environ['REGISTRY_TOKEN']}".encode()
+          ).decode()
+          cfg.setdefault("auths", {})["ghcr.io"] = {"auth": auth}
+          cfg_path.write_text(json.dumps(cfg, indent=2))
+          PY
       - name: Pull and restart
         env:
           IMAGE_TAG: ${{ github.sha }}
