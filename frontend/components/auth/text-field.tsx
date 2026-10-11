@@ -16,7 +16,7 @@ export function TextField({ id, label, type = "text", autoComplete, inputMode, e
     const errorId = `${id}-error`;
     return (
         <div className="flex flex-col gap-2">
-            <Label htmlFor={id}>{label}</Label>
+            <Label htmlFor={id} className="label-mono text-muted-foreground">{label}</Label>
             <Input
                 id={id}
                 type={type}

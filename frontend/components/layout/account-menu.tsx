@@ -17,8 +17,11 @@ export function AccountMenu() {
     }
 
     return (
-        <div className="flex items-center gap-3 rounded-xs border border-border bg-background/60 py-1 pl-3 pr-1">
-            <span className="hidden max-w-40 truncate text-xs font-medium md:inline">{user.email}</span>
+        <div className="flex items-center gap-2">
+            <div className="hidden flex-col items-end text-right md:flex">
+                <span className="label-mono max-w-48 truncate text-foreground">{user.email}</span>
+                <span className="label-mono text-[10px] text-muted-foreground">Signed in</span>
+            </div>
             <SignOutButton />
         </div>
     );

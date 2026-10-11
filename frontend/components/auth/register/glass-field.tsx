@@ -53,13 +53,13 @@ export function GlassField({
         <div className={cn("group/field flex flex-col gap-1.5 transition-opacity duration-300", disabled && "opacity-60")}>
             <label
                 htmlFor={id}
-                className="text-xs font-medium text-muted-foreground transition-colors group-focus-within/field:text-foreground"
+                className="label-mono text-muted-foreground transition-colors group-focus-within/field:text-foreground"
             >
                 {label}
             </label>
             <div
                 className={cn(
-                    "relative rounded-xs border bg-background/60 transition-colors duration-200",
+                    "relative rounded-xs border bg-card transition-colors duration-200",
                     error
                         ? "border-destructive ring-1 ring-destructive"
                         : "border-input focus-within:border-ring focus-within:ring-1 focus-within:ring-ring",

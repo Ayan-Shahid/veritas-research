@@ -6,7 +6,7 @@ import { cn } from "cn"
 // Tags are solid fills with a plain border (the `tag` utility in app/globals.css derives the border
 // from the fill, darker in light mode and lighter in dark mode).
 const badgeVariants = cva(
-  "group/badge tag inline-flex h-5 w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-xs px-1.5 py-0.5 text-[11px] font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring has-data-[icon=inline-end]:pr-1 has-data-[icon=inline-start]:pl-1 [&>svg]:pointer-events-none [&>svg]:size-3!",
+  "group/badge tag inline-flex h-5 w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-xs px-1.5 py-0.5 font-mono text-[11px] font-medium tracking-[0.06em] whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring has-data-[icon=inline-end]:pr-1 has-data-[icon=inline-start]:pl-1 [&>svg]:pointer-events-none [&>svg]:size-3!",
   {
     variants: {
       variant: {
@@ -16,6 +16,8 @@ const badgeVariants = cva(
         warning: "[--tag-c:var(--warning)] [--tag-fg:var(--warning-foreground)]",
         destructive: "[--tag-c:var(--destructive)] [--tag-fg:var(--destructive-foreground)]",
         outline: "[--tag-c:var(--background)] [--tag-fg:var(--foreground)] border-border!",
+        // Ticker symbol: opaque pale-cobalt fill, cobalt rule and text (as in the coverage table).
+        ticker: "[--tag-c:var(--ticker)] [--tag-fg:var(--ticker-foreground)] border-primary! font-semibold",
       },
     },
     defaultVariants: {

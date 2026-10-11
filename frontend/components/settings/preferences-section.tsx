@@ -20,7 +20,7 @@ export function PreferencesSection() {
     return (
         <SettingsCard title="Preferences" description="Stored in this browser.">
             <div className="flex flex-col gap-2">
-                <span className="text-sm font-medium" id="theme-label">Theme</span>
+                <span className="label-mono text-muted-foreground" id="theme-label">Theme</span>
                 <div role="radiogroup" aria-labelledby="theme-label" className="grid grid-cols-3 gap-2">
                     {THEMES.map(({ value, label, icon: Icon }) => (
                         <button
@@ -30,10 +30,10 @@ export function PreferencesSection() {
                             aria-checked={theme === value}
                             onClick={() => setTheme(value)}
                             className={cn(
-                                "flex items-center justify-center gap-2 rounded-xs border px-3 py-2 text-sm transition-colors",
+                                "label-mono flex items-center justify-center gap-2 rounded-xs border px-3 py-2.5 transition-colors",
                                 theme === value
                                     ? "border-primary bg-primary text-primary-foreground"
-                                    : "border-border text-muted-foreground hover:bg-muted hover:text-foreground",
+                                    : "border-border bg-card text-foreground/80 hover:bg-muted hover:text-foreground",
                             )}
                         >
                             <Icon className="h-4 w-4" />

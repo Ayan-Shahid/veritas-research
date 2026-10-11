@@ -32,7 +32,9 @@ export async function fetcher<T>(endpoint: string, init?: RequestInit): Promise<
 
     if (!res.ok) {
         const error = await res.json().catch(() => ({}));
-        throw new Error(error.detail || `API error: ${res.status}`);
+        throw new Error(typeof error.detail === "string" ? error.detail : `API error: ${res.status}`);
     }
+    // 204 No Content (DELETE /memos/{id}, POST /notifications/read-all): no body to parse.
+    if (res.status === 204 || res.headers.get("content-length") === "0") return undefined as T;
     return res.json();
 }

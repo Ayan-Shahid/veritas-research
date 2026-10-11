@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useMemo as useMemoQuery, useMemoActions, useMemoVersions, useMemoAuditLog } from "@/hooks/use-memos";
 import { useCompany } from "@/hooks/use-companies";
 import { MemoView } from "@/components/views/memo-view";
@@ -9,6 +10,7 @@ interface MemoContainerProps {
 }
 
 export function MemoContainer({ memoId }: MemoContainerProps) {
+    const router = useRouter();
     // 1. Fetch primary data
     const { data: memo, isLoading: isMemoLoading, isError: isMemoError } = useMemoQuery(memoId);
     const { data: company, isLoading: isCompanyLoading, isError: isCompanyError } = useCompany(memo?.company_id);
@@ -38,7 +40,8 @@ export function MemoContainer({ memoId }: MemoContainerProps) {
             onReject={() => reject.mutate()}
             onDelete={() => {
                 if (window.confirm("Are you sure you want to delete this memo?")) {
-                    remove.mutate();
+                    const companyId = memo.company_id;
+                    remove.mutate(undefined, { onSuccess: () => router.replace(`/companies/${companyId}`) });
                 }
             }}
             isPending={approve.isPending || reject.isPending || remove.isPending}

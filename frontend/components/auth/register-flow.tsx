@@ -49,7 +49,7 @@ function StepHeader({ icon: Icon, title, subtitle }: { icon: LucideIcon; title: 
                 <Icon className="size-5" />
             </div>
             <div className="flex flex-col gap-1.5">
-                <h1 className="font-heading text-2xl font-bold tracking-tight text-foreground">{title}</h1>
+                <h1 className="font-heading text-3xl font-medium tracking-[-0.01em] text-foreground">{title}</h1>
                 <p className="text-sm text-muted-foreground">{subtitle}</p>
             </div>
         </div>
@@ -506,7 +506,7 @@ export function DoneStep({ onContinue }: { onContinue: () => void }) {
                 </span>
             </div>
             <div className="fx-rise flex flex-col gap-1.5" style={stagger(2)}>
-                <h1 className="font-heading text-2xl font-bold tracking-tight">You&apos;re all set</h1>
+                <h1 className="font-heading text-3xl font-medium tracking-[-0.01em]">You&apos;re all set</h1>
                 <p className="text-sm text-muted-foreground">Your workspace is saved to your account. Everything you built is still here.</p>
             </div>
             <div className="fx-rise flex w-full flex-col gap-3" style={stagger(3)}>

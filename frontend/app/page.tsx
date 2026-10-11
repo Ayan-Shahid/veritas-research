@@ -31,25 +31,25 @@ export default function Home() {
                 <section className="mx-auto grid max-w-6xl items-center gap-14 px-4 pb-20 pt-16 lg:grid-cols-[1fr_1.05fr] lg:pt-24">
                     <div className="flex flex-col items-start gap-6">
                         <span
-                            className="fx-rise tag inline-flex items-center gap-2 rounded-xs px-2.5 py-1 font-mono text-[11px] font-semibold uppercase tracking-widest [--tag-c:var(--primary)] [--tag-fg:var(--primary-foreground)]"
+                            className="fx-rise label-mono inline-flex items-center gap-2 text-foreground/80"
                             style={rise(0)}
                         >
-                            <span className="relative flex size-1.5" aria-hidden>
-                                <span className="absolute inline-flex size-full rounded-full bg-primary-foreground/60 motion-safe:animate-ping" />
-                                <span className="relative inline-flex size-1.5 rounded-full bg-primary-foreground" />
+                            <span className="relative flex size-2" aria-hidden>
+                                <span className="absolute inline-flex size-full bg-primary/50 motion-safe:animate-ping" />
+                                <span className="relative inline-flex size-2 bg-primary" />
                             </span>
                             {HERO.eyebrow}
                         </span>
 
                         <h1
-                            className="fx-rise font-heading text-4xl font-bold leading-[1.08] tracking-tight md:text-5xl lg:text-6xl"
+                            className="fx-rise font-heading text-5xl font-medium leading-[1.02] tracking-[-0.025em] md:text-6xl lg:text-7xl"
                             style={rise(1)}
                         >
                             {HERO.titleLead}{" "}
                             <span className="italic text-primary">{HERO.titleAccent}</span>
                         </h1>
 
-                        <p className="fx-rise max-w-xl text-lg leading-relaxed text-muted-foreground" style={rise(2)}>
+                        <p className="fx-rise max-w-xl text-lg leading-relaxed text-foreground/75" style={rise(2)}>
                             {HERO.body}
                         </p>
 
@@ -68,7 +68,7 @@ export default function Home() {
                             </Button>
                         </div>
 
-                        <p className="fx-rise text-sm text-muted-foreground" style={rise(4)}>
+                        <p className="fx-rise label-mono text-muted-foreground" style={rise(4)}>
                             {HERO.note}
                         </p>
                     </div>

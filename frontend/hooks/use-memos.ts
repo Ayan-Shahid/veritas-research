@@ -45,7 +45,8 @@ export interface AuditLog {
 export function useCitation(memoId?: string, citationId?: string) {
     return useQuery({
         queryKey: ['memo', memoId, 'citation', citationId],
-        queryFn: () => fetcher<CitationResponse>(`/${memoId}/citations/${citationId}`),
+        queryFn: () => fetcher<CitationResponse>(`/memos/${memoId}/citations/${encodeURIComponent(citationId!)}`),
+        retry: false,
         enabled: !!memoId && !!citationId,
     });
 }

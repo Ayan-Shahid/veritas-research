@@ -2,17 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, Menu, Settings } from "lucide-react";
+import { Menu } from "lucide-react";
 import { useUIStore } from "@/store/ui-store";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 
-const TERMINAL_NAV = [{ href: "/companies", label: "Companies", icon: Building2 }] as const;
+const SECTIONS = [
+    { title: "Research ledgers", items: [{ href: "/companies", label: "Companies" }] },
+    { title: "Account", items: [{ href: "/settings", label: "Settings" }] },
+] as const;
 
-const ACCOUNT_NAV = [{ href: "/settings", label: "Settings", icon: Settings }] as const;
-
-function NavLink({ href, label, icon: Icon }: { href: string; label: string; icon: React.ComponentType<{ className?: string }> }) {
+function NavLink({ href, label }: { href: string; label: string }) {
     const pathname = usePathname();
     const active = pathname === href || pathname.startsWith(`${href}/`);
     return (
@@ -20,46 +21,28 @@ function NavLink({ href, label, icon: Icon }: { href: string; label: string; ico
             href={href}
             aria-current={active ? "page" : undefined}
             className={cn(
-                "flex items-center gap-3 rounded-xs border px-3 py-2 transition-colors",
+                "relative flex items-center justify-between px-5 py-3 transition-colors",
                 active
-                    ? "border-border bg-background text-foreground font-medium"
-                    : "border-transparent text-muted-foreground hover:bg-muted hover:text-foreground",
+                    ? "bg-sidebar-accent font-sans text-[15px] font-semibold uppercase tracking-[0.02em] text-foreground before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:bg-primary"
+                    : "label-mono text-[12px] text-foreground/80 hover:bg-sidebar-accent/60 hover:text-foreground",
             )}
         >
-            <Icon className="w-4 h-4" />
-            <span className="text-sm">{label}</span>
+            {label}
         </Link>
     );
 }
 
 const NavContent = () => (
-    <div className="flex h-full flex-col bg-background/70 backdrop-blur-md">
-        <div className="h-16 px-6 flex items-center gap-3 border-b border-border shrink-0">
-            <span className="grid size-8 place-items-center rounded-xs border border-primary bg-primary font-heading text-sm font-bold text-primary-foreground">V</span>
-            <div className="flex flex-col">
-                <span className="font-sans text-base tracking-tight text-foreground uppercase font-bold leading-none">Veritas</span>
-                <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest">Research</span>
+    <nav aria-label="Main" className="flex h-full flex-col bg-sidebar">
+        {SECTIONS.map((section) => (
+            <div key={section.title} className="flex flex-col border-b border-sidebar-border py-3">
+                <span className="label-mono px-5 pb-3 pt-2 text-muted-foreground">{section.title}</span>
+                {section.items.map((item) => (
+                    <NavLink key={item.href} {...item} />
+                ))}
             </div>
-        </div>
-
-        <div className="px-6 pt-6 pb-2">
-            <span className="font-sans text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Terminal Navigation</span>
-        </div>
-        <nav className="flex flex-col gap-1 px-3">
-            {TERMINAL_NAV.map((item) => (
-                <NavLink key={item.href} {...item} />
-            ))}
-        </nav>
-
-        <div className="px-6 pt-6 pb-2">
-            <span className="font-sans text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Account</span>
-        </div>
-        <nav className="flex flex-col gap-1 px-3">
-            {ACCOUNT_NAV.map((item) => (
-                <NavLink key={item.href} {...item} />
-            ))}
-        </nav>
-    </div>
+        ))}
+    </nav>
 );
 
 export function Sidebar() {
@@ -67,30 +50,25 @@ export function Sidebar() {
 
     return (
         <>
-            {/* 2. Desktop Sidebar: Hidden on mobile (lg:flex) */}
+            {/* Desktop: sits under the full-width header. */}
             <aside
                 className={cn(
-                    "hidden lg:flex fixed left-0 top-0 h-screen w-64 border-r border-border z-40 flex-col justify-between transition-transform duration-300 ease-in-out",
-                    !isSidebarOpen && "-translate-x-full"
+                    "hidden lg:flex fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 border-r border-sidebar-border z-40 flex-col transition-transform duration-300 ease-in-out",
+                    !isSidebarOpen && "-translate-x-full",
                 )}
             >
-                <NavContent/>
+                <NavContent />
             </aside>
 
-            {/* 3. Mobile Sidebar: Sheet overlay triggered by a Floating Action Button */}
+            {/* Mobile: sheet opened from a floating button. */}
             <div className="lg:hidden">
                 <Sheet>
-                    <SheetTrigger render={<Button
-                        size="icon"
-                        aria-label="Open navigation"
-                        className="fixed bottom-6 right-6 z-50 size-12"
-                    />}>
-
-                        <Menu className="size-5"/>
+                    <SheetTrigger render={<Button size="icon" aria-label="Open navigation" className="fixed bottom-6 right-6 z-50 size-12" />}>
+                        <Menu className="size-5" />
                     </SheetTrigger>
-                    <SheetContent side="left" className="p-0 w-72 border-r border-border">
-                        <SheetTitle className="sr-only">Mobile Navigation</SheetTitle>
-                        <NavContent/>
+                    <SheetContent side="left" className="w-72 border-r border-sidebar-border p-0 pt-6">
+                        <SheetTitle className="sr-only">Navigation</SheetTitle>
+                        <NavContent />
                     </SheetContent>
                 </Sheet>
             </div>

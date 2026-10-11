@@ -65,7 +65,7 @@ export function MemoPreview() {
                                 <div key={claim.section} className="flex flex-col gap-2.5">
                                     <span
                                         className={cn(
-                                            "font-mono text-[10px] font-bold uppercase tracking-widest transition-colors duration-500",
+                                            "label-mono text-[10px] transition-colors duration-500",
                                             isActive ? "text-primary" : "text-muted-foreground",
                                         )}
                                     >
@@ -94,7 +94,7 @@ export function MemoPreview() {
 
                     {/* source pane */}
                     <div className="flex flex-col gap-4 border-t border-border bg-foreground/[0.02] p-5 sm:border-l sm:border-t-0">
-                        <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                        <span className="label-mono text-[10px] text-muted-foreground">
                             Source excerpt
                         </span>
                         <div key={active} className="fx-rise flex flex-col gap-4" aria-live="polite">

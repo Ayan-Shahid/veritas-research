@@ -1,59 +1,63 @@
 "use client";
 
-import { Search, Bell, Moon, Sun, Menu } from "lucide-react";
+import Link from "next/link";
+import { Search, Moon, Sun, PanelLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
 import { useUIStore } from "@/store/ui-store";
 import { useTheme } from "next-themes";
-import { useUnreadCount } from "@/hooks/use-notifications";
+import { NotificationMenu } from "@/components/layout/notification-menu";
 import { AccountMenu } from "@/components/layout/account-menu";
 
-export function Header() {
-    const { isSidebarOpen, toggleSidebar } = useUIStore();
-    const { resolvedTheme, setTheme } = useTheme();
-    const unread = useUnreadCount();
+/** Square cobalt monogram + serif wordmark with a mono strapline. */
+export function Wordmark({ href = "/companies" }: { href?: string }) {
+    return (
+        <Link href={href} className="flex items-center gap-3" aria-label="Veritas Research home">
+            <span className="grid size-8 shrink-0 place-items-center rounded-xs border border-primary bg-primary font-heading text-[17px] font-semibold text-primary-foreground">
+                V
+            </span>
+            <span className="hidden flex-col sm:flex">
+                <span className="font-heading text-[22px] font-medium leading-none tracking-[-0.01em] text-foreground">Veritas Research</span>
+                <span className="label-mono mt-1 text-[10px] text-muted-foreground">Equity intelligence</span>
+            </span>
+        </Link>
+    );
+}
 
+export function Header() {
+    const toggleSidebar = useUIStore((s) => s.toggleSidebar);
+    const { resolvedTheme, setTheme } = useTheme();
 
     return (
-        <header className={cn(
-            "fixed top-0 right-0 h-16 z-30 flex items-center justify-between px-4 lg:px-6 transition-all duration-300 ease-in-out",
-            "border-b border-border bg-background/70 backdrop-blur-md",
-            isSidebarOpen ? "left-0 lg:left-64" : "left-0"
-        )}>
-            <div className="flex items-center gap-3 lg:gap-4 flex-1 max-w-2xl">
-                {/* Desktop Toggle: Hidden on mobile */}
-                <Button variant="ghost" size="icon" onClick={toggleSidebar} className="hidden lg:flex text-muted-foreground shrink-0">
-                    <Menu className="w-5 h-5" />
-                </Button>
+        <header className="fixed inset-x-0 top-0 z-50 flex h-16 items-center gap-4 border-b border-border bg-background/90 px-4 backdrop-blur-sm lg:px-6">
+            <Button variant="ghost" size="icon-sm" onClick={toggleSidebar} aria-label="Toggle sidebar" className="hidden text-muted-foreground lg:inline-flex">
+                <PanelLeft />
+            </Button>
+            <Wordmark />
 
-                <div className="relative w-full flex items-center">
-                    <Search className="absolute left-3 w-4 h-4 text-muted-foreground z-10" />
-                    <Input
-                        className="h-9 w-full bg-background/60 pl-9 text-sm"
-                        placeholder="Search tickers, filings, or memos..."
+            <div className="mx-auto hidden w-full max-w-md md:block">
+                <label className="relative flex items-center">
+                    <span className="sr-only">Search</span>
+                    <Search className="pointer-events-none absolute left-3 size-4 text-muted-foreground" />
+                    <input
+                        className="h-9 w-full rounded-xs border border-input bg-card pl-9 pr-3 font-mono text-xs tracking-[0.06em] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring"
+                        placeholder="Search tickers, SEC filings, memos…"
                     />
-                </div>
+                </label>
             </div>
-            <div className="flex items-center gap-1 lg:gap-2">
-                <Button variant="ghost" size="icon" aria-label="Notifications" className="text-muted-foreground relative">
-                    <Bell className="w-5 h-5" />
-                    {unread > 0 && (
-                        <span className="absolute top-1.5 right-1.5 min-w-4 h-4 px-1 rounded-xs border border-primary bg-primary text-primary-foreground text-[10px] font-semibold leading-[14px] text-center">{unread > 9 ? "9+" : unread}</span>
-                    )}
-                </Button>
 
+            <div className="ml-auto flex items-center gap-1 md:ml-0">
+                <NotificationMenu />
                 <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
                     aria-label="Toggle theme"
-                    className="text-muted-foreground mr-1"
+                    className="text-muted-foreground"
                 >
-                    <Sun className="w-5 h-5 hidden dark:block" />
-                    <Moon className="w-5 h-5 block dark:hidden" />
+                    <Sun className="hidden dark:block" />
+                    <Moon className="block dark:hidden" />
                 </Button>
-
+                <div className="mx-2 hidden h-8 w-px bg-border md:block" aria-hidden />
                 <AccountMenu />
             </div>
         </header>

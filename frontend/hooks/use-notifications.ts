@@ -31,3 +31,11 @@ export function useMarkNotificationRead() {
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
     })
 }
+
+export function useMarkAllNotificationsRead() {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: () => fetcher<void>('/notifications/read-all', { method: 'POST' }),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+    })
+}

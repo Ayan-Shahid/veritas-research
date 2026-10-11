@@ -69,11 +69,12 @@ const fragmentShader = /* glsl */ `
         // CSS-pixel coordinates, origin top-left (so the grid stays anchored to the top of the page).
         vec2 p = vec2(gl_FragCoord.x, u_size.y * u_dpr - gl_FragCoord.y) / u_dpr;
 
-        vec3 bg      = mix(vec3(0.972, 0.974, 0.980), vec3(0.047, 0.051, 0.063), u_theme);
-        vec3 minorC  = mix(vec3(0.905, 0.910, 0.925), vec3(0.090, 0.098, 0.118), u_theme);
-        vec3 majorC  = mix(vec3(0.835, 0.842, 0.865), vec3(0.135, 0.145, 0.175), u_theme);
-        vec3 markC   = mix(vec3(0.640, 0.650, 0.690), vec3(0.300, 0.320, 0.380), u_theme);
-        vec3 signalC = mix(vec3(0.255, 0.330, 0.880), vec3(0.380, 0.520, 1.000), u_theme);
+        // Paper & ink palette (sRGB of the --background / --border tokens in app/globals.css).
+        vec3 bg      = mix(vec3(0.968, 0.963, 0.952), vec3(0.060, 0.055, 0.049), u_theme);
+        vec3 minorC  = mix(vec3(0.938, 0.931, 0.918), vec3(0.082, 0.077, 0.070), u_theme);
+        vec3 majorC  = mix(vec3(0.890, 0.880, 0.862), vec3(0.118, 0.112, 0.102), u_theme);
+        vec3 markC   = mix(vec3(0.660, 0.648, 0.622), vec3(0.290, 0.279, 0.262), u_theme);
+        vec3 signalC = mix(vec3(0.109, 0.312, 0.845), vec3(0.275, 0.503, 0.944), u_theme);
 
         vec2 dMinor = gridDist(p, MINOR);
         vec2 dMajor = gridDist(p, MAJOR);

@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import get_current_user
@@ -43,3 +43,16 @@ async def mark_notification_read(
         await db.commit()
         await db.refresh(notification)
     return notification
+
+
+@router.post("/notifications/read-all", status_code=204)
+async def mark_all_notifications_read(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    await db.execute(
+        update(Notification)
+        .where(Notification.user_id == current_user.id, Notification.read_at.is_(None))
+        .values(read_at=datetime.now(timezone.utc))
+    )
+    await db.commit()

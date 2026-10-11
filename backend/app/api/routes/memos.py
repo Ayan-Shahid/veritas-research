@@ -1,7 +1,8 @@
+import re
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
@@ -9,6 +10,7 @@ from app.api.deps import get_db, get_owned_company, get_owned_memo, get_owned_jo
 from app.core.auth import get_current_user
 from app.models.audit_log import AuditLog
 from app.models.company import Company
+from app.models.filing import Filing
 from app.models.filing_chunk import FilingChunk
 from app.models.job import Job
 from app.models.memo import Memo
@@ -154,25 +156,56 @@ async def get_memo_citation(
     memo: Memo = Depends(get_owned_memo),
     db: AsyncSession = Depends(get_db),
 ):
-    """Resolves a parent block citation hash into the actual SEC filing text."""
-    if not memo.citation_map:
-        raise HTTPException(status_code=404, detail="Memo or citations not found")
+    """Resolves a parent-block citation hash ("sec-1a2b3c4d") into the SEC filing text it cites.
 
-    child_ids = memo.citation_map.get(citation_id)
-    if not child_ids:
+    Accepts the id with or without its "sec-" prefix. Chunk ids recorded at generation time go
+    stale when a filing is purged or re-ingested (its chunks are deleted and recreated with new
+    ids), so if none of them still exist this falls back to finding a current chunk of the same
+    company whose parent text hashes to the same citation id - the hash is of the text itself,
+    so it survives re-ingestion.
+    """
+    raw = citation_id.strip().lower()
+    citation_key = raw if raw.startswith("sec-") else f"sec-{raw}"
+    digest = citation_key.removeprefix("sec-")
+    if not re.fullmatch(r"[0-9a-f]{8}", digest):
         raise HTTPException(status_code=404, detail="Invalid citation ID")
 
-    first_child_id = uuid.UUID(child_ids[0])
-    chunk = await db.get(FilingChunk, first_child_id)
+    chunk: FilingChunk | None = None
+    for child_id in (memo.citation_map or {}).get(citation_key, []):
+        try:
+            chunk = await db.get(FilingChunk, uuid.UUID(child_id))
+        except ValueError:
+            continue
+        if chunk is not None and chunk.user_id == memo.user_id:
+            break
+        chunk = None
 
-    if not chunk or not chunk.chunk_metadata:
-        raise HTTPException(status_code=404, detail="Source chunk missing")
+    if chunk is None:
+        parent_text = func.coalesce(FilingChunk.chunk_metadata["parent_content"].astext, FilingChunk.content)
+        result = await db.execute(
+            select(FilingChunk)
+            .join(Filing, Filing.id == FilingChunk.filing_id)
+            .where(
+                Filing.company_id == memo.company_id,
+                FilingChunk.user_id == memo.user_id,
+                func.substr(func.md5(parent_text), 1, 8) == digest,
+            )
+            .limit(1)
+        )
+        chunk = result.scalar_one_or_none()
 
+    if chunk is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Source text for this citation is no longer ingested. Re-ingest the filing to view it.",
+        )
+
+    metadata = chunk.chunk_metadata or {}
     return {
-        "citation_id": citation_id,
-        "source_url": chunk.chunk_metadata.get("source_url"),
-        "sec_item_label": chunk.chunk_metadata.get("sec_item_label"),
-        "content": chunk.chunk_metadata.get("parent_content", chunk.content)
+        "citation_id": citation_key,
+        "source_url": metadata.get("source_url"),
+        "sec_item_label": metadata.get("sec_item_label"),
+        "content": metadata.get("parent_content", chunk.content),
     }
 
 

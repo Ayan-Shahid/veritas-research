@@ -6,8 +6,8 @@ import { SettingsCard } from "@/components/settings/settings-card";
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
     return (
         <div className="flex flex-col gap-1">
-            <dt className="text-xs uppercase tracking-widest text-muted-foreground font-bold">{label}</dt>
-            <dd className="text-sm break-all">{children}</dd>
+            <dt className="label-mono text-muted-foreground">{label}</dt>
+            <dd className="text-[15px] break-all">{children}</dd>
         </div>
     );
 }
