@@ -1,5 +1,8 @@
 import asyncio
+import logging
 from datetime import datetime
+
+import httpx
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, delete, update
@@ -20,6 +23,7 @@ from app.services.embeddings import embed_texts
 from app.services.cache import invalidate_chunk_cache
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 @router.get("/companies/{company_id}/filings", response_model=list[FilingRead])
@@ -38,8 +42,23 @@ async def sync_filings(
         company: Company = Depends(get_owned_company),
         db: AsyncSession = Depends(get_db),
 ):
+    # Rows created before CompanyCreate validated CIKs can still hold junk; refuse those cleanly
+    # instead of letting int(cik) in the EDGAR client raise a 500.
+    cik = (company.cik or "").strip()
+    if not cik.isdigit() or len(cik) > 10:
+        raise HTTPException(status_code=422, detail="This company's CIK is not a valid SEC CIK (1-10 digits)")
+
     client = EdgarClient()
-    filings_data = await client.get_recent_filings(company.cik, forms=("10-K", "10-Q"), limit=8)
+    try:
+        filings_data = await client.get_recent_filings(cik, forms=("10-K", "10-Q"), limit=8)
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code == 404:
+            raise HTTPException(status_code=404, detail=f"SEC EDGAR has no filings for CIK {cik.zfill(10)}") from None
+        logger.warning("EDGAR submissions fetch failed for CIK %s: HTTP %s", cik, exc.response.status_code)
+        raise HTTPException(status_code=502, detail="SEC EDGAR is unavailable right now. Try again shortly.") from None
+    except (httpx.HTTPError, KeyError, ValueError):
+        logger.exception("EDGAR submissions fetch/parse failed for CIK %s", cik)
+        raise HTTPException(status_code=502, detail="Couldn't read filings from SEC EDGAR. Try again shortly.") from None
 
     created: list[Filing] = []
     for item in filings_data:
@@ -76,8 +95,13 @@ async def ingest_filing(
             filing_type=filing.form_type,
             user_agent=settings.EDGAR_USER_AGENT,
         )
-    except Exception as e:
-        raise HTTPException(status_code=422, detail=f"Failed to parse and chunk filing: {e}")
+    except Exception:
+        # Details go to the server log only: exception text can carry internal URLs, paths and
+        # library internals that callers have no business seeing.
+        logger.exception("Parsing/chunking failed for filing %s (%s)", filing.id, filing.primary_document_url)
+        raise HTTPException(
+            status_code=422, detail="Couldn't parse this filing. Try again later, or pick another filing."
+        ) from None
 
     if not chunks:
         raise HTTPException(status_code=422, detail="Fetched document had no extractable target sections")

@@ -29,6 +29,8 @@ x-backend: &backend
     ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
     EDGAR_USER_AGENT: ${EDGAR_USER_AGENT}
     CORS_ORIGINS: '["https://${DOMAIN}"]'
+    # X-Service-Token for POST /fine-tune-runs (scripts/record_finetune_run.py). Unset = disabled.
+    SERVICE_API_TOKEN: ${SERVICE_API_TOKEN:-}
 
 services:
   postgres:

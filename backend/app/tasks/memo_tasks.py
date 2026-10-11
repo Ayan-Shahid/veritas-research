@@ -8,7 +8,9 @@ the sync engine/session, not the async ones the FastAPI app uses.
 """
 from __future__ import annotations
 
+import logging
 import uuid
+
 from sqlalchemy import select
 
 from app.core.celery_app import celery_app
@@ -18,7 +20,6 @@ from app.models.audit_log import AuditLog
 from app.models.company import Company
 from app.models.filing_chunk import FilingChunk
 from app.models.job import Job
-from app.models.user import User
 from app.models.memo import Memo
 from app.models.notification import Notification
 from app.services.cache import get_cached_chunk_ids, set_cached_chunk_ids
@@ -27,6 +28,14 @@ from app.services.grounding import strip_invalid_citations
 from app.services.llm import generate_memo_draft
 from app.services.retrieval import build_top_chunks_query
 from app.services.retrieval import deduplicate_parent_chunks
+
+logger = logging.getLogger(__name__)
+
+
+class MemoJobError(Exception):
+    """A failure whose message is written for the user and safe to show via GET /jobs/{id}.
+    Anything else is logged and reported with a generic message."""
+
 
 RETRIEVAL_QUERY = (
     "business overview, revenue growth, profitability, margins, "
@@ -48,12 +57,12 @@ def generate_memo_task(self, job_id: str) -> None:
         try:
             company = db.get(Company, job.company_id)
             if company is None:
-                raise ValueError(f"Company {job.company_id} not found")
+                raise MemoJobError("The company for this job no longer exists.")
             company_label = company.name
 
             chunks = _retrieve_chunks(db, job.company_id)
             if not chunks:
-                raise ValueError("No ingested filing chunks for this company.")
+                raise MemoJobError("No ingested filing chunks for this company. Ingest a filing first.")
 
             chunk_pairs, hash_to_children = deduplicate_parent_chunks(chunks)
             valid_ids = set(hash_to_children.keys())
@@ -107,7 +116,11 @@ def generate_memo_task(self, job_id: str) -> None:
         except Exception as exc:  # noqa: BLE001
             db.rollback()
             job.status = "failed"
-            job.error = str(exc)
+            if isinstance(exc, MemoJobError):
+                job.error = str(exc)
+            else:
+                logger.exception("Memo generation job %s failed", job.id)
+                job.error = "Memo generation failed. Try again, and check the server logs if it keeps failing."
             db.add(
                 Notification(
                     user_id=job.user_id,

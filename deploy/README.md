@@ -52,6 +52,24 @@ start failed half-way, reset with `docker compose down -v` (deletes all data).
    (a second browser signed in to the same account gets bounced to `/`).
 6. Forgot password: the reset code email arrives and works.
 7. `docker compose logs auth | grep -i error` is quiet.
+8. API surface is closed: `/api/docs`, `/api/redoc` and `/api/openapi.json` return `404`;
+   `/api/eval-runs` and `/api/fine-tune-runs` return `401` without a token; and
+   `curl -s -o /dev/null -w '%{http_code}' -X POST https://veritas.ayandev.app/api/fine-tune-runs`
+   prints `503` (no `SERVICE_API_TOKEN` set) or `401` (set, but no header sent).
+
+## Service token (recording fine-tune runs)
+
+`POST /api/fine-tune-runs` is the one endpoint called by a script instead of a signed-in user, so
+it takes a shared secret in the `X-Service-Token` header. New `.env` files from `gen-secrets.py`
+include `SERVICE_API_TOKEN`; for an existing one, append it and redeploy:
+
+```bash
+echo "SERVICE_API_TOKEN=$(python3 -c 'import secrets; print(secrets.token_hex(32))')" >> ~/veritas-deploy-env/.env
+```
+
+Then, wherever the training run finishes:
+`VERITAS_SERVICE_TOKEN=<that value> python scripts/record_finetune_run.py run.json --api-url https://veritas.ayandev.app/api`.
+Without the variable set the endpoint stays disabled (always `503`), which is the safe default.
 
 ## Tests for these files
 

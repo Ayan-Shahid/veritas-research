@@ -28,6 +28,14 @@ class GenSecrets(unittest.TestCase):
     def test_filled_file_passes(self):
         self.assertEqual(gs.check(filled()), [])
 
+    def test_service_token_generated_and_optional(self):
+        v = filled()
+        self.assertEqual(len(v["SERVICE_API_TOKEN"]), 64)
+        del v["SERVICE_API_TOKEN"]  # .env files generated before it existed must still pass
+        self.assertEqual(gs.check(v), [])
+        v["SERVICE_API_TOKEN"] = "short"
+        self.assertTrue(any("SERVICE_API_TOKEN" in p for p in gs.check(v)))
+
     def test_passwords_unique_alnum_32(self):
         v = gs.generate_values()
         pws = [v[k] for k in gs.PASSWORDS]

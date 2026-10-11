@@ -108,6 +108,7 @@ def generate_values(now: int | None = None) -> dict[str, str]:
     values["ANON_KEY"] = api_key("anon", jwt_secret, now)
     values["SERVICE_ROLE_KEY"] = api_key("service_role", jwt_secret, now)
     values["SECRET_KEY"] = secrets.token_hex(32)
+    values["SERVICE_API_TOKEN"] = secrets.token_hex(32)
     return values
 
 
@@ -155,6 +156,12 @@ def check(values: dict[str, str]) -> list[str]:
     pws = [values.get(k) for k in PASSWORDS if values.get(k)]
     if len(set(pws)) != len(pws):
         problems.append("the four passwords must all be different")
+
+    # Optional (older .env files predate it; the endpoint it guards is simply disabled without it),
+    # but if present it must be a real secret.
+    service_token = values.get("SERVICE_API_TOKEN", "")
+    if service_token and ("CHANGEME" in service_token or len(service_token) < 32):
+        problems.append("SERVICE_API_TOKEN must be at least 32 characters (python3 -c 'import secrets; print(secrets.token_hex(32))')")
 
     secret = values.get("JWT_SECRET", "")
     if secret and len(secret) < 32:

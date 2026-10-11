@@ -18,7 +18,7 @@ interface CompaniesViewProps {
     searchQuery: string;
     onSearchChange: (val: string) => void;
     isLoading: boolean;
-    onCreateCompany: (data: { ticker: string; name: string; cik: string; sector: string }) => void;
+    onCreateCompany: (data: { ticker: string; name: string; cik: string; sector: string }) => Promise<void>;
     isCreating: boolean;
 }
 
@@ -36,12 +36,19 @@ export function CompaniesView({
 }: CompaniesViewProps) {
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [formData, setFormData] = useState({ ticker: "", name: "", cik: "", sector: "" });
+    const [formError, setFormError] = useState<string | null>(null);
 
-    const handleAddSubmit = (e: React.FormEvent) => {
+    const handleAddSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        onCreateCompany(formData);
-        setIsAddOpen(false);
-        setFormData({ ticker: "", name: "", cik: "", sector: "" });
+        setFormError(null);
+        try {
+            await onCreateCompany(formData);
+            setIsAddOpen(false);
+            setFormData({ ticker: "", name: "", cik: "", sector: "" });
+        } catch (err) {
+            // Keep the dialog and what was typed; show why the API refused it (e.g. duplicate CIK).
+            setFormError(err instanceof Error ? err.message : "Couldn't add this company.");
+        }
     };
 
     const emptyOrLoading = isLoading ? (
@@ -59,7 +66,13 @@ export function CompaniesView({
                 title="Coverage Universe"
                 description="Companies you track, the SEC filings ingested for each, and the memos drafted from them."
                 actions={
-                    <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+                    <Dialog
+                        open={isAddOpen}
+                        onOpenChange={(open) => {
+                            setIsAddOpen(open);
+                            if (!open) setFormError(null);
+                        }}
+                    >
                         <DialogTrigger render={<Button size="lg" className="w-full sm:w-auto" />}>
                             <Plus /> Add company
                         </DialogTrigger>
@@ -71,12 +84,13 @@ export function CompaniesView({
                             <form onSubmit={handleAddSubmit} className="mt-2 flex flex-col gap-4">
                                 {(
                                     [
-                                        ["ticker", "Ticker symbol", "e.g. AAPL", true],
-                                        ["name", "Company name", "e.g. Apple Inc.", true],
-                                        ["cik", "CIK number", "e.g. 0000320193", true],
-                                        ["sector", "Sector", "e.g. Technology", false],
+                                        // Limits mirror CompanyCreate in backend/app/schemas/company.py.
+                                        ["ticker", "Ticker symbol", "e.g. AAPL", true, 10, "[A-Za-z0-9][A-Za-z0-9.\\-]{0,9}", "1-10 letters, digits, . or -"],
+                                        ["name", "Company name", "e.g. Apple Inc.", true, 255, undefined, undefined],
+                                        ["cik", "CIK number", "e.g. 0000320193", true, 10, "\\d{1,10}", "1-10 digits"],
+                                        ["sector", "Sector", "e.g. Technology", false, 100, undefined, undefined],
                                     ] as const
-                                ).map(([key, label, placeholder, required]) => (
+                                ).map(([key, label, placeholder, required, maxLength, pattern, title]) => (
                                     <div key={key} className="grid gap-2">
                                         <Label htmlFor={key} className="label-mono text-muted-foreground">
                                             {label}
@@ -87,10 +101,19 @@ export function CompaniesView({
                                             onChange={(e) => setFormData({ ...formData, [key]: e.target.value })}
                                             placeholder={placeholder}
                                             required={required}
+                                            maxLength={maxLength}
+                                            pattern={pattern}
+                                            title={title}
+                                            inputMode={key === "cik" ? "numeric" : undefined}
                                             className={key === "ticker" || key === "cik" ? "font-mono" : undefined}
                                         />
                                     </div>
                                 ))}
+                                {formError && (
+                                    <p role="alert" className="rounded-xs border border-destructive bg-destructive px-3 py-2 text-sm text-destructive-foreground">
+                                        {formError}
+                                    </p>
+                                )}
                                 <Button type="submit" disabled={isCreating} size="lg" className="mt-2">
                                     {isCreating && <Loader2 className="animate-spin" />}
                                     Track company

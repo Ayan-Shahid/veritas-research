@@ -1,7 +1,8 @@
 import asyncio
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, or_, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db, get_owned_company
@@ -36,24 +37,31 @@ async def create_company(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    normalized_ticker = payload.ticker.strip().upper()
-
-    # Scoped per user - two users researching the same real-world ticker
-    # is expected and fine; only a duplicate within one account is rejected.
-    existing = await db.execute(
-        select(Company).where(
+    # Ticker and CIK arrive normalised (upper-case ticker, 10-digit CIK) from CompanyCreate.
+    # Scoped per user - two users researching the same real-world company is expected and fine;
+    # only a duplicate within one account is rejected. CIKs are compared without leading zeros so
+    # rows saved before CIKs were zero-padded still count as duplicates.
+    duplicate = await db.execute(
+        select(Company.ticker, Company.cik)
+        .where(
             Company.user_id == current_user.id,
-            Company.ticker == normalized_ticker,
+            or_(Company.ticker == payload.ticker, func.ltrim(Company.cik, "0") == payload.cik.lstrip("0")),
         )
+        .limit(1)
     )
-    if existing.scalar_one_or_none():
-        raise HTTPException(status_code=409, detail=f"Company {normalized_ticker} already exists")
+    clash = duplicate.first()
+    if clash is not None:
+        field = "ticker" if clash.ticker == payload.ticker else "CIK"
+        raise HTTPException(status_code=409, detail=f"You already track a company with this {field} ({clash.ticker})")
 
-    data = payload.model_dump()
-    data["ticker"] = normalized_ticker
-    company = Company(user_id=current_user.id, **data)
+    company = Company(user_id=current_user.id, **payload.model_dump())
     db.add(company)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        # A concurrent request inserted the same ticker/CIK between the check and the insert.
+        await db.rollback()
+        raise HTTPException(status_code=409, detail="You already track this company") from None
     await db.refresh(company)
     return company
 

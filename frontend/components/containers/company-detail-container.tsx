@@ -45,10 +45,21 @@ export function CompanyDetailContainer({ companyId }: { companyId: string }) {
             memos={memos}
             activeJob={jobStatus}
             isSyncing={syncFilings.isPending}
-            onSync={() => syncFilings.mutate()}
-            onIngest={(filingId) => ingestFiling.mutate(filingId)}
+            onSync={() =>
+                syncFilings.mutate(undefined, {
+                    onError: (err) => toast.add({ title: "Couldn't sync filings", description: err.message, type: "error" }),
+                })
+            }
+            onIngest={(filingId) =>
+                ingestFiling.mutate(filingId, {
+                    onError: (err) => toast.add({ title: "Couldn't ingest filing", description: err.message, type: "error" }),
+                })
+            }
             onPurge={(filingId) => {
-                if(window.confirm("Purge all vectorized chunks for this filing?")) purgeFiling.mutate(filingId);
+                if (window.confirm("Purge all vectorized chunks for this filing?"))
+                    purgeFiling.mutate(filingId, {
+                        onError: (err) => toast.add({ title: "Couldn't purge filing", description: err.message, type: "error" }),
+                    });
             }}
             onGenerateMemo={() => {
                 generateMemo.mutate(undefined, {

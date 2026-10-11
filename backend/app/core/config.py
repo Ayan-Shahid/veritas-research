@@ -20,6 +20,15 @@ class Settings(BaseSettings):
     SUPABASE_JWT_SECRET: str = ""
     # Reject tokens whose GoTrue session was revoked (needs auth_bridge from deploy/initdb).
     AUTH_SESSION_CHECK: bool = True
+    # Shared secret for machine-to-machine writes (scripts/record_finetune_run.py sends it as
+    # X-Service-Token). Empty = those endpoints are disabled and always refuse.
+    SERVICE_API_TOKEN: str = ""
+    # Interactive /docs, /redoc and /openapi.json. Off in production unless explicitly enabled.
+    API_DOCS_ENABLED: bool | None = None
+
+    @property
+    def docs_enabled(self) -> bool:
+        return self.API_DOCS_ENABLED if self.API_DOCS_ENABLED is not None else self.ENV != "production"
 
     ANTHROPIC_API_KEY: str = ""
     ANTHROPIC_MODEL: str = "claude-sonnet-5"

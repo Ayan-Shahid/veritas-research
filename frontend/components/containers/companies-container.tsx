@@ -9,7 +9,7 @@ export function CompaniesContainer() {
     const { companies, metrics, isLoading } = useFilteredCompanies(searchQuery);
 
     // Hook up the creation mutation
-    const { mutate: createCompany, isPending: isCreating } = useCreateCompany();
+    const { mutateAsync: createCompany, isPending: isCreating } = useCreateCompany();
 
     return (
         <CompaniesView
@@ -18,7 +18,9 @@ export function CompaniesContainer() {
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             isLoading={isLoading}
-            onCreateCompany={(data) => createCompany(data)}
+            onCreateCompany={async (data) => {
+                await createCompany(data);
+            }}
             isCreating={isCreating}
         />
     );

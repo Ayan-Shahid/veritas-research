@@ -7,7 +7,9 @@ locally and then ask the database whether the token's session still exists, so s
 "sign out other devices" and a password change cut off API access at once instead of
 when the token expires (GOTRUE_JWT_EXP).
 """
-from fastapi import Depends, HTTPException, Request
+import hmac
+
+from fastapi import Depends, Header, HTTPException, Request
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -85,3 +87,27 @@ async def _provision_user(db: AsyncSession, identity: AuthIdentity) -> User:
         return existing
     await db.refresh(user)
     return user
+
+
+async def get_registered_user(current_user: User = Depends(get_current_user)) -> User:
+    """Like get_current_user, but refuses guest (anonymous) sessions.
+
+    Guests carry role "authenticated" like everyone else (that's how GoTrue issues them), so the
+    distinction is the is_anonymous claim, mirrored onto the users row on every request.
+    """
+    if current_user.is_anonymous:
+        raise HTTPException(status_code=403, detail="Create an account to use this feature")
+    return current_user
+
+
+def require_service_token(x_service_token: str | None = Header(default=None)) -> None:
+    """Machine-to-machine auth for endpoints scripts call without a user session.
+
+    Compared in constant time. With SERVICE_API_TOKEN unset the endpoint is disabled rather than
+    open, so forgetting to configure it fails closed.
+    """
+    expected = settings.SERVICE_API_TOKEN
+    if not expected:
+        raise HTTPException(status_code=503, detail="This endpoint is disabled on this server")
+    if not x_service_token or not hmac.compare_digest(x_service_token.encode(), expected.encode()):
+        raise HTTPException(status_code=401, detail="Invalid service token")

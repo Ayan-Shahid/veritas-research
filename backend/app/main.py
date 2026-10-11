@@ -14,7 +14,15 @@ from app.api.routes import (
 )
 from app.core.config import settings
 
-app = FastAPI(title=settings.PROJECT_NAME)
+# The interactive docs and the OpenAPI schema map every route and field; production hides them
+# (set API_DOCS_ENABLED=true to turn them back on).
+_docs = settings.docs_enabled
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    docs_url="/docs" if _docs else None,
+    redoc_url="/redoc" if _docs else None,
+    openapi_url="/openapi.json" if _docs else None,
+)
 
 app.add_middleware(
     CORSMiddleware,
